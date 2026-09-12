@@ -225,7 +225,3 @@ rag-model/
 ├── requirements.txt            # Python dependencies
 └── README.md                   # Project documentation
 ```
-
-<div align="center">
-Built with LangChain, llama.cpp, and FAISS
-</div>
