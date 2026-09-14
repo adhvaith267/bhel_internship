@@ -1,5 +1,5 @@
 from typing import List
-from docurag.core.config import CHUNK_SIZE, CHUNK_OVERLAP
+from bhel_internship.core.config import CHUNK_SIZE, CHUNK_OVERLAP
 
 def split_text_recursive(
     text: str,

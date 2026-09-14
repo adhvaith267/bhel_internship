@@ -14,12 +14,12 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from docurag.api.deps import get_engine
-from docurag.api.schemas import AskRequest, AskResponse, ChatRequest
-from docurag.core.config import settings
-from docurag.core.logger import logger
-from docurag.engine.pipeline import DocuRAGEngine
-from docurag.indexing.parser import get_all_pdf_paths
+from bhel_internship.api.deps import get_engine
+from bhel_internship.api.schemas import AskRequest, AskResponse, ChatRequest
+from bhel_internship.core.config import settings
+from bhel_internship.core.logger import logger
+from bhel_internship.engine.pipeline import DocuRAGEngine
+from bhel_internship.indexing.parser import get_all_pdf_paths
 
 
 def text_to_html(text: str) -> str:
@@ -198,5 +198,5 @@ def create_app() -> FastAPI:
     return application
 
 
-# Default application instance for `uvicorn main:app` / `uvicorn docurag.api.routes:app`.
+# Default application instance for `uvicorn main:app` / `uvicorn bhel_internship.api.routes:app`.
 app = create_app()

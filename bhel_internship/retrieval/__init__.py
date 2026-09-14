@@ -1,4 +1,4 @@
-from docurag.retrieval.hybrid import (
+from bhel_internship.retrieval.hybrid import (
     HybridRAGRetriever,
     expand_query_variants,
     tokenize_bm25,

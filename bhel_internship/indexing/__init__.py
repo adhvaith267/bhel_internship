@@ -1,4 +1,4 @@
-from docurag.indexing.parser import (
+from bhel_internship.indexing.parser import (
     clean_text,
     table_to_markdown,
     compute_file_hash,
@@ -7,7 +7,7 @@ from docurag.indexing.parser import (
     get_all_pdf_paths,
     ocr_page,
 )
-from docurag.indexing.chunker import split_text_recursive
+from bhel_internship.indexing.chunker import split_text_recursive
 
 __all__ = [
     "clean_text",

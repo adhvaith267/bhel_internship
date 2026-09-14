@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Eval CLI: `python -m docurag eval goldens.json [--threshold 0.5]`.
+"""Eval CLI: `python -m bhel_internship eval goldens.json [--threshold 0.5]`.
 
 Exit code is 0 when all cases pass, 1 otherwise (CI-friendly).
 """
@@ -13,7 +13,7 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-from docurag.eval.harness import load_goldens, run_eval
+from bhel_internship.eval.harness import load_goldens, run_eval
 
 console = Console()
 
@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     goldens = load_goldens(args.goldens)
 
-    from docurag.engine.pipeline import get_rag_engine
+    from bhel_internship.engine.pipeline import get_rag_engine
 
     with console.status("[bold green]Running eval...[/bold green]"):
         engine = get_rag_engine()

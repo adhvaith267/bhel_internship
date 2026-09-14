@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple
 import fitz  # PyMuPDF
 
-from docurag.core.config import (
+from bhel_internship.core.config import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     DOCS_DIR,
@@ -16,8 +16,8 @@ from docurag.core.config import (
     OCR_DPI,
     OCR_MIN_CHARS,
 )
-from docurag.core.logger import logger
-from docurag.indexing.chunker import split_text_recursive
+from bhel_internship.core.logger import logger
+from bhel_internship.indexing.chunker import split_text_recursive
 
 def compute_file_hash(filepath: Path) -> str:
     """Computes SHA-256 hash of a file to check for changes."""

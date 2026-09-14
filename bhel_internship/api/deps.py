@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from docurag.engine.pipeline import DocuRAGEngine, get_rag_engine
+from bhel_internship.engine.pipeline import DocuRAGEngine, get_rag_engine
 
 
 @lru_cache(maxsize=1)

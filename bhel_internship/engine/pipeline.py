@@ -1,11 +1,11 @@
 import time
 from typing import Dict, Any, List, Optional, Generator
-from docurag.retrieval.hybrid import HybridRAGRetriever
-from docurag.llm.provider import LLMEngine
-from docurag.llm.prompts import SYSTEM_PROMPT
-from docurag.core.config import ENABLE_ABSTENTION, ABSTAIN_MIN_SCORE, ENABLE_CORRECTIVE_RETRY
-from docurag.core.logger import logger
-from docurag.engine.grounding import (
+from bhel_internship.retrieval.hybrid import HybridRAGRetriever
+from bhel_internship.llm.provider import LLMEngine
+from bhel_internship.llm.prompts import SYSTEM_PROMPT
+from bhel_internship.core.config import ENABLE_ABSTENTION, ABSTAIN_MIN_SCORE, ENABLE_CORRECTIVE_RETRY
+from bhel_internship.core.logger import logger
+from bhel_internship.engine.grounding import (
     ABSTENTION_MESSAGE,
     build_clarification,
     empty_report,

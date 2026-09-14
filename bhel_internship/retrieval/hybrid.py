@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
 import torch
 
-from docurag.core.config import (
+from bhel_internship.core.config import (
     CACHE_DIR,
     DOCS_DIR,
     EMBEDDING_MODEL_NAME,
@@ -25,8 +25,8 @@ from docurag.core.config import (
     MMR_ENABLED,
     MMR_LAMBDA,
 )
-from docurag.indexing.parser import extract_pdf_documents, get_all_pdf_paths, compute_file_hash
-from docurag.core.logger import logger
+from bhel_internship.indexing.parser import extract_pdf_documents, get_all_pdf_paths, compute_file_hash
+from bhel_internship.core.logger import logger
 
 def tokenize_bm25(text: str) -> List[str]:
     """Lowercase alphanumeric tokens.

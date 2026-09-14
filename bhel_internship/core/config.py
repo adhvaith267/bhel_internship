@@ -5,7 +5,7 @@ server options. Values can be overridden via environment variables or a
 `.env` file at the repository root.
 
 Module-level constants (``HOST``, ``PORT``, ...) are kept so existing
-``from docurag.core.config import HOST`` imports keep working.
+``from bhel_internship.core.config import HOST`` imports keep working.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Repository root: docurag/core/config.py -> core -> docurag -> root.
+# Repository root: bhel_internship/core/config.py -> core -> bhel_internship -> root.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 load_dotenv(BASE_DIR / ".env")

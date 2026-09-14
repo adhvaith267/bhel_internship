@@ -1,4 +1,4 @@
-"""`python -m docurag` — serve the API, run eval, or launch the terminal CLI."""
+"""`python -m bhel_internship` — serve the API, run eval, or launch the terminal CLI."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] == "serve":
         import uvicorn
 
-        from docurag.core.config import settings
+        from bhel_internship.core.config import settings
 
         uvicorn.run(
-            "docurag.api.routes:app",
+            "bhel_internship.api.routes:app",
             host=settings.host,
             port=settings.port,
             reload=settings.debug,
@@ -20,11 +20,11 @@ def main() -> int:
         return 0
 
     if len(sys.argv) > 1 and sys.argv[1] == "eval":
-        from docurag.eval.cli import main as eval_main
+        from bhel_internship.eval.cli import main as eval_main
 
         return eval_main(sys.argv[2:])
 
-    from docurag.cli import main as cli_main
+    from bhel_internship.cli import main as cli_main
 
     return cli_main(sys.argv[1:])
 

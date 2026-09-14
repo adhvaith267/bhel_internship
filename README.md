@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ DocuRAG — Enterprise RAG Engine
+# ⚡ Enterprise RAG Engine
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -27,7 +27,7 @@ Bharat Heavy Electricals Limited (BHEL) operates with a vast corpus of internal 
 - **No verifiable citations** — Generic AI chatbots hallucinate answers without pointing to exact page numbers and source passages, making them unreliable for compliance-critical queries.
 - **Data privacy concerns** — Sensitive BHEL documents cannot be uploaded to third-party cloud APIs. All processing must happen **locally on-premise**.
 
-**DocuRAG** provides a fully local, GPU-accelerated document QA system that retrieves grounded answers with exact page citations from indexed PDFs — no data ever leaves the machine.
+**This Enterprise RAG Engine** provides a fully local, GPU-accelerated document QA system that retrieves grounded answers with exact page citations from indexed PDFs — no data ever leaves the machine.
 
 ---
 
@@ -75,7 +75,7 @@ Bharat Heavy Electricals Limited (BHEL) operates with a vast corpus of internal 
 
 ```mermaid
 flowchart TD
-    PDF["docs/*.pdf"] -->|PyMuPDF Text & Tables| Ingest["docurag/indexing/parser.py"]
+    PDF["docs/*.pdf"] -->|PyMuPDF Text & Tables| Ingest["bhel_internship/indexing/parser.py"]
     Ingest -->|Chunks & Markdown Tables| Cache[".rag_cache (FAISS + BM25)"]
 
     UserQuery["User Question"] -->|Hybrid Query| RRF["Stage 1: Hybrid Search (FAISS + BM25 RRF)"]
@@ -105,11 +105,11 @@ flowchart TD
 ## Project Structure
 
 ```
-DocuRAG/
+bhel_internship/
 ├── app.py                # Uvicorn launcher (simple entrypoint)
-├── docurag/              # Main application package
+├── bhel_internship/      # Main application package
 │   ├── __init__.py       # Package version + lazy engine exports
-│   ├── __main__.py       # `python -m docurag` (CLI) / `python -m docurag serve`
+│   ├── __main__.py       # `python -m bhel_internship` (CLI) / `python -m bhel_internship serve`
 │   ├── cli.py            # Interactive terminal CLI
 │   ├── core/
 │   │   ├── config.py     # Settings (env / .env) + path & tuning constants
@@ -128,7 +128,7 @@ DocuRAG/
 │   │   └── grounding.py  # Citation verification + refusal detection
 │   ├── eval/
 │   │   ├── harness.py    # Goldens-based eval (context/coverage/grounding)
-│   │   └── cli.py        # `python -m docurag eval goldens.json`
+│   │   └── cli.py        # `python -m bhel_internship eval goldens.json`
 │   └── api/
 │       ├── routes.py     # FastAPI app factory + route definitions
 │       ├── schemas.py    # Pydantic request/response models
@@ -147,15 +147,15 @@ DocuRAG/
 
 ## BHEL Employee Lifecycle & Day in the Life
 
-This section shows how a BHEL employee uses DocuRAG end-to-end — from adding documents to getting grounded answers for real work scenarios.
+This section shows how a BHEL employee uses this engine end-to-end — from adding documents to getting grounded answers for real work scenarios.
 
 ### 1. Initial Setup (One-time, ~5 minutes)
 
 **IT Admin / Power User:**
 ```bash
 # 1. Clone repo to on-prem server or workstation
-git clone https://github.com/yourorg/docurag.git
-cd docurag
+git clone https://github.com/yourorg/bhel_internship.git
+cd bhel_internship
 
 # 2. Create venv & install deps (includes sentence-transformers, FAISS, llama-cpp)
 python -m venv venv
@@ -242,7 +242,7 @@ resp = httpx.post("http://localhost:5000/ask", json={
 ```bash
 cp eval/goldens.example.json eval/goldens.json
 # Edit goldens.json with your document-specific Q&A pairs
-python -m docurag eval eval/goldens.json
+python -m bhel_internship eval eval/goldens.json
 ```
 
 **Output:**
@@ -250,11 +250,11 @@ python -m docurag eval eval/goldens.json
 Eval Results
 ┏━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┓
 ┃ # ┃ Question                              ┃ Ctx     ┃ Cover ┃ Ground ┃ Result  ┃
-┣━━━┿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━┫
-┃ 1 ┃ Passing grade for B.Tech CSE?         ┃ ✓       ┃ 1.00  ┃ 1.00   ┃ PASS    ┃
-┃ 2 ┃ ISO 9001 production control clauses   ┃ ✓       ┃ 0.80  ┃ 0.83   ┃ PASS    ┃
-┃ 3 ┃ Hot work permit validity              ┃ ✓       ┃ 1.00  ┃ 1.00   ┃ PASS    ┃
-┗━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━┻━━━━━━━┻━━━━━━━━━━┻━━━━━━━━━┛
+┡━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━┩
+│ 1 │ Passing grade for B.Tech CSE?         ┃ ✓       ┃ 1.00  ┃ 1.00   ┃ PASS    │
+│ 2 │ ISO 9001 production control clauses   ┃ ✓       ┃ 0.80  ┃ 0.83   ┃ PASS    │
+│ 3 │ Hot work permit validity              ┃ ✓       ┃ 1.00  ┃ 1.00   ┃ PASS    │
+└─────┴─────────────────────────────────────┴─────────┴───────┴────────┴─────────┘
 {"total": 3, "passed": 3, "pass_rate": 1.0, "context_hit_rate": 1.0, ...}
 ```
 
@@ -275,8 +275,8 @@ Eval Results
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/docurag.git
-cd docurag
+git clone https://github.com/yourusername/bhel_internship.git
+cd bhel_internship
 
 # Create and activate virtual environment
 python -m venv venv
@@ -299,7 +299,7 @@ cp /path/to/your/documents/*.pdf docs/
 ```bash
 python app.py
 # or
-python -m docurag serve
+python -m bhel_internship serve
 ```
 
 - **Web Interface**: [http://localhost:5000](http://localhost:5000)
@@ -309,13 +309,13 @@ python -m docurag serve
 
 ```bash
 # Single question
-python -m docurag -q "What is the passing criteria?"
+python -m bhel_internship -q "What is the passing criteria?"
 
 # Interactive REPL
-python -m docurag
+python -m bhel_internship
 
 # Rebuild index first
-python -m docurag --reindex
+python -m bhel_internship --reindex
 ```
 
 ### 6. Run an Eval (Optional)
@@ -323,14 +323,14 @@ python -m docurag --reindex
 ```bash
 cp eval/goldens.example.json eval/goldens.json
 # edit eval/goldens.json to match your PDFs
-python -m docurag eval eval/goldens.json
+python -m bhel_internship eval eval/goldens.json
 ```
 
 ---
 
 ## Configuration
 
-Settings can be customized via environment variables or a `.env` file (see `docurag/core/config.py`):
+Settings can be customized via environment variables or a `.env` file (see `bhel_internship/core/config.py`):
 
 | Variable | Default | Description |
 |---|---|---|
@@ -381,7 +381,7 @@ MIT — see [LICENSE](LICENSE) for details.
 Issues and PRs welcome. Please run the eval harness before submitting:
 
 ```bash
-python -m docurag eval eval/goldens.json
+python -m bhel_internship eval eval/goldens.json
 ```
 
 ---

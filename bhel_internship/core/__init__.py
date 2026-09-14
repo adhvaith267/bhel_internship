@@ -1,13 +1,13 @@
 """Core shared primitives: settings, logging, exceptions."""
 
-from docurag.core.config import settings
-from docurag.core.exceptions import (
+from bhel_internship.core.config import settings
+from bhel_internship.core.exceptions import (
     DocuRAGError,
     DocumentNotFoundError,
     IndexNotReadyError,
     LLMProviderError,
 )
-from docurag.core.logger import logger
+from bhel_internship.core.logger import logger
 
 __all__ = [
     "settings",

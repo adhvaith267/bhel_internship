@@ -3,13 +3,13 @@ import time
 from typing import Generator, Optional
 import httpx
 
-from docurag.core.config import (
+from bhel_internship.core.config import (
     LLM_PROVIDER,
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,
     GGUF_MODEL_PATH
 )
-from docurag.core.logger import logger
+from bhel_internship.core.logger import logger
 
 class LLMEngine:
     def __init__(self):
