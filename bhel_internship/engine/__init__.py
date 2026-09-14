@@ -5,13 +5,13 @@ from bhel_internship.engine.grounding import (
     verify_citations,
 )
 from bhel_internship.engine.pipeline import (
-    DocuRAGEngine,
+    EnterpriseRAGEngine,
     get_rag_engine,
     format_context
 )
 
 __all__ = [
-    "DocuRAGEngine",
+    "EnterpriseRAGEngine",
     "get_rag_engine",
     "format_context",
     "empty_report",

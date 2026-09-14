@@ -1,4 +1,4 @@
-"""Structured Rich logging for DocuRAG."""
+"""Structured Rich logging for Enterprise RAG Engine."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from rich.logging import RichHandler
 console = Console()
 
 
-def setup_logger(name: str = "DocuRAG") -> logging.Logger:
+def setup_logger(name: str = "EnterpriseRAG") -> logging.Logger:
     """Create (or reuse) a Rich-formatted logger honoring ``LOG_LEVEL``."""
     level_name = os.getenv("LOG_LEVEL", "INFO").upper()
     level = getattr(logging, level_name, logging.INFO)

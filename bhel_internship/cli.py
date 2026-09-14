@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DocuRAG interactive terminal CLI.
+"""Enterprise RAG Engine interactive terminal CLI.
 
 Usage:
     python -m bhel_internship.cli                  # interactive chat
@@ -57,7 +57,7 @@ def run_interactive(engine, top_n: int = 4) -> None:
             if not question:
                 continue
             if question.lower() in ("exit", "quit", "q"):
-                console.print("[yellow]Exiting DocuRAG CLI. Goodbye![/yellow]")
+                console.print("[yellow]Exiting Enterprise RAG Engine CLI. Goodbye![/yellow]")
                 break
 
             with console.status("[bold magenta]Retrieving and generating answer...[/bold magenta]"):
@@ -73,7 +73,7 @@ def run_interactive(engine, top_n: int = 4) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="DocuRAG terminal chat")
+    parser = argparse.ArgumentParser(description="Enterprise RAG Engine terminal chat")
     parser.add_argument("-q", "--question", default=None, help="Ask a single question and exit")
     parser.add_argument("--top-n", type=int, default=4, help="Retrieved passages to use (default: 4)")
     parser.add_argument("--doc", default=None, help="Restrict context to a single document name")
@@ -86,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
 
     console.print(
         Panel.fit(
-            "[bold cyan]DocuRAG Terminal[/bold cyan]\n"
+            "[bold cyan]Enterprise RAG Engine Terminal[/bold cyan]\n"
             "[dim]Hybrid Dense-Sparse Retrieval + Neural Re-ranking[/dim]",
             border_style="blue",
         )

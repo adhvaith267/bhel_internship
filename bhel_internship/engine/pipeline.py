@@ -45,7 +45,7 @@ def format_context(chunks: List[Dict[str, Any]], expand_context: bool = True) ->
 
     return "\n\n".join(context_blocks)
 
-class DocuRAGEngine:
+class EnterpriseRAGEngine:
     def __init__(self):
         logger.info("Initializing RAG Engine...")
         self.retriever = HybridRAGRetriever()
@@ -300,11 +300,11 @@ Provide a comprehensive, accurate answer based solely on the context above:"""
 
 
 # Global singleton
-_engine_instance: Optional[DocuRAGEngine] = None
+_engine_instance: Optional[EnterpriseRAGEngine] = None
 
-def get_rag_engine() -> DocuRAGEngine:
+def get_rag_engine() -> EnterpriseRAGEngine:
     global _engine_instance
     if _engine_instance is None:
-        _engine_instance = DocuRAGEngine()
+        _engine_instance = EnterpriseRAGEngine()
         _engine_instance.initialize()
     return _engine_instance

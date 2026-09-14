@@ -1,19 +1,19 @@
-"""Shared domain exceptions for DocuRAG."""
+"""Shared domain exceptions for Enterprise RAG Engine."""
 
 from __future__ import annotations
 
 
-class DocuRAGError(Exception):
-    """Base class for all DocuRAG errors."""
+class EnterpriseRAGError(Exception):
+    """Base class for all Enterprise RAG Engine errors."""
 
 
-class IndexNotReadyError(DocuRAGError):
+class IndexNotReadyError(EnterpriseRAGError):
     """Raised when retrieval is attempted before the index is built."""
 
 
-class DocumentNotFoundError(DocuRAGError):
+class DocumentNotFoundError(EnterpriseRAGError):
     """Raised when a requested document filter matches nothing."""
 
 
-class LLMProviderError(DocuRAGError):
+class LLMProviderError(EnterpriseRAGError):
     """Raised when all configured LLM providers fail."""

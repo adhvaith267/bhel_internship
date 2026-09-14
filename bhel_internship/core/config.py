@@ -33,8 +33,8 @@ class Settings:
         self.docs_dir = Path(os.getenv("DOCS_DIR", str(BASE_DIR / "docs")))
         self.cache_dir = Path(os.getenv("CACHE_DIR", str(BASE_DIR / ".rag_cache")))
         self.models_dir = Path(os.getenv("MODELS_DIR", str(BASE_DIR / "models")))
-        self.static_dir = Path(os.getenv("STATIC_DIR", str(BASE_DIR / "static")))
-        self.templates_dir = Path(os.getenv("TEMPLATES_DIR", str(BASE_DIR / "templates")))
+        self.static_dir = Path(os.getenv("STATIC_DIR", str(BASE_DIR / "ui" / "static")))
+        self.templates_dir = Path(os.getenv("TEMPLATES_DIR", str(BASE_DIR / "ui" / "templates")))
 
         # --- Retrieval tuning ---
         self.chunk_size = int(os.getenv("CHUNK_SIZE", "650"))

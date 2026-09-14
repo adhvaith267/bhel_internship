@@ -19,7 +19,7 @@ console = Console()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="DocuRAG eval harness")
+    parser = argparse.ArgumentParser(description="Enterprise RAG Engine eval harness")
     parser.add_argument("goldens", help="Path to goldens JSON file")
     parser.add_argument("--threshold", type=float, default=0.5,
                         help="Minimum keyword coverage to pass (default: 0.5)")

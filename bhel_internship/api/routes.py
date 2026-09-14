@@ -18,7 +18,7 @@ from bhel_internship.api.deps import get_engine
 from bhel_internship.api.schemas import AskRequest, AskResponse, ChatRequest
 from bhel_internship.core.config import settings
 from bhel_internship.core.logger import logger
-from bhel_internship.engine.pipeline import DocuRAGEngine
+from bhel_internship.engine.pipeline import EnterpriseRAGEngine
 from bhel_internship.indexing.parser import get_all_pdf_paths
 
 
@@ -61,16 +61,16 @@ def _format_inline(text: str) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    logger.info("[bold cyan]Starting DocuRAG server...[/bold cyan]")
+    logger.info("[bold cyan]Starting Enterprise RAG Engine server...[/bold cyan]")
     get_engine()  # warm up retriever + LLM on startup
     yield
-    logger.info("[bold yellow]Shutting down DocuRAG server...[/bold yellow]")
+    logger.info("[bold yellow]Shutting down Enterprise RAG Engine server...[/bold yellow]")
 
 
 def create_app() -> FastAPI:
     """Build and configure the FastAPI application (import-safe factory)."""
     application = FastAPI(
-        title="DocuRAG API",
+        title="Enterprise RAG Engine API",
         description="Local RAG API: hybrid retrieval, neural re-ranking, grounded answers.",
         version="2.0.0",
         lifespan=lifespan,
@@ -89,7 +89,7 @@ def create_app() -> FastAPI:
     templates = Jinja2Templates(directory=str(settings.templates_dir))
 
     @application.get("/", response_class=HTMLResponse)
-    async def index(request: Request, engine: DocuRAGEngine = Depends(get_engine)):
+    async def index(request: Request, engine: EnterpriseRAGEngine = Depends(get_engine)):
         pdf_files = [p.name for p in get_all_pdf_paths()]
         return templates.TemplateResponse(
             request,
@@ -107,7 +107,7 @@ def create_app() -> FastAPI:
         )
 
     @application.post("/ask")
-    async def ask_endpoint(payload: AskRequest, engine: DocuRAGEngine = Depends(get_engine)):
+    async def ask_endpoint(payload: AskRequest, engine: EnterpriseRAGEngine = Depends(get_engine)):
         question = payload.question.strip()
         if question.lower() == "exit" or not question:
             return {
@@ -131,7 +131,7 @@ def create_app() -> FastAPI:
         }
 
     @application.post("/api/chat")
-    async def chat_api(payload: ChatRequest, engine: DocuRAGEngine = Depends(get_engine)):
+    async def chat_api(payload: ChatRequest, engine: EnterpriseRAGEngine = Depends(get_engine)):
         question = payload.question.strip()
         if not question:
             raise HTTPException(status_code=400, detail="Question cannot be empty.")
@@ -150,7 +150,7 @@ def create_app() -> FastAPI:
         return engine.query(question=question, top_n=payload.top_n, doc_name=payload.doc_name)
 
     @application.get("/api/documents")
-    async def list_documents(engine: DocuRAGEngine = Depends(get_engine)):
+    async def list_documents(engine: EnterpriseRAGEngine = Depends(get_engine)):
         pdf_paths = get_all_pdf_paths()
         docs_info = []
         for p in pdf_paths:
@@ -172,7 +172,7 @@ def create_app() -> FastAPI:
         }
 
     @application.post("/api/reindex")
-    async def reindex_documents(engine: DocuRAGEngine = Depends(get_engine)):
+    async def reindex_documents(engine: EnterpriseRAGEngine = Depends(get_engine)):
         t0 = time.time()
         engine.reindex()
         return {
@@ -184,7 +184,7 @@ def create_app() -> FastAPI:
 
     @application.get("/api/status")
     @application.get("/api/health")
-    async def health_check(engine: DocuRAGEngine = Depends(get_engine)):
+    async def health_check(engine: EnterpriseRAGEngine = Depends(get_engine)):
         return {
             "status": "healthy",
             "backend": "FastAPI",
