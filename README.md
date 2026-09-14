@@ -1,227 +1,389 @@
 <div align="center">
 
-# DocuRAG — Enterprise RAG Engine with Local LLMs
+# ⚡ DocuRAG — Enterprise RAG Engine
 
-A fully local, privacy-preserving Retrieval-Augmented Generation (RAG) system for querying enterprise PDF documents using quantized open-source LLMs — no external API calls, no data leaving your infrastructure.
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Ollama](https://img.shields.io/badge/Ollama-LLM-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com)
+[![FAISS](https://img.shields.io/badge/FAISS-Vector_Search-4285F4?style=for-the-badge&logo=meta&logoColor=white)](https://github.com/facebookresearch/faiss)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![LangChain](https://img.shields.io/badge/Framework-LangChain-1C3C3C.svg)](https://www.langchain.com/)
-[![llama.cpp](https://img.shields.io/badge/Inference-llama.cpp-000000.svg)](https://github.com/ggerganov/llama.cpp)
-[![FAISS](https://img.shields.io/badge/Vector%20Store-FAISS-005571.svg)](https://github.com/facebookresearch/faiss)
+**A high-performance, privacy-preserving Retrieval-Augmented Generation system built for enterprise document intelligence at BHEL.**
 
-</div>
+[Features](#key-features) · [Architecture](#architecture-overview) · [API](#api-endpoints) · [BHEL Employee Lifecycle](#bhel-employee-lifecycle--day-in-the-life) · [Setup](#quick-start)
 
 ---
 
-## Table of Contents
+</div>
 
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Two Entry Points: Web App vs. CLI](#two-entry-points-web-app-vs-cli)
-- [Supported Models](#supported-models)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
+## The Problem — Document Intelligence at BHEL
 
-## Overview
+Bharat Heavy Electricals Limited (BHEL) operates with a vast corpus of internal technical manuals, policy documents, curriculum syllabi, compliance reports, and engineering specifications — often spanning hundreds of pages across dozens of PDFs.
 
-DocuRAG is a Retrieval-Augmented Generation pipeline built to run entirely on local infrastructure. It ingests enterprise PDF documents — including both free text and tabular data — chunks and embeds them, and serves natural language answers using quantized GGUF language models run through `llama.cpp`. Because inference, embeddings, and vector search all run locally, no document content or query ever leaves the host machine, making it suitable for confidential or regulated enterprise data.
+**Current pain points this engine solves:**
+
+- **Manual document lookup is slow** — Engineers and staff spend significant time searching through lengthy PDF documents for specific technical details, policy clauses, or curriculum requirements.
+- **Keyword search falls short** — Traditional search misses semantically relevant passages when the exact keywords don't match (e.g., searching "passing marks" when the document says "minimum grade criteria").
+- **No verifiable citations** — Generic AI chatbots hallucinate answers without pointing to exact page numbers and source passages, making them unreliable for compliance-critical queries.
+- **Data privacy concerns** — Sensitive BHEL documents cannot be uploaded to third-party cloud APIs. All processing must happen **locally on-premise**.
+
+**DocuRAG** provides a fully local, GPU-accelerated document QA system that retrieves grounded answers with exact page citations from indexed PDFs — no data ever leaves the machine.
+
+---
 
 ## Key Features
 
-- **Local-Only Inference** — Runs quantized GGUF models via `llama-cpp-python`; no external LLM API required
-- **Selectable Model Backend** — Swap between 17 pre-configured Mistral, Mixtral, and lightweight models via an interactive CLI menu or a hardcoded index
-- **Dual-Layer Chunking (Parent/Child Retrieval)** — Uses LangChain's `ParentDocumentRetriever` to embed small, precise child chunks for retrieval while returning larger parent chunks for richer context
-- **Table-Aware PDF Extraction** — Extracts both narrative text (via PyMuPDF) and structured tables (via `img2table` + BeautifulSoup) from source PDFs, preserving table structure as JSON
-- **Local Embeddings** — Uses a locally-hosted `all-MiniLM-L6-v2` sentence-transformer model for vector embeddings, avoiding external embedding API calls
-- **FAISS Vector Store** — Efficient similarity search over embedded document chunks
-- **Two Interfaces** — A multi-document Flask web app for production use, and a single-document interactive CLI for quick local testing and experimentation
+- **Two-Stage Hybrid Retrieval Pipeline**
+  - **Stage 1A — Dense Semantic**: FAISS inner-product cosine similarity via `all-MiniLM-L6-v2` (CUDA-accelerated when available)
+  - **Stage 1B — Sparse Lexical**: BM25Okapi for exact keyword matches (course codes, acronyms, credit numbers)
+  - **Reciprocal Rank Fusion (RRF)**: Merges dense and lexical candidate lists with balanced weighting
 
-## Architecture
+- **Neural Cross-Encoder Re-ranking**
+  - Re-ranks candidate passages using `cross-encoder/ms-marco-MiniLM-L-6-v2` to prioritize high-precision context for the LLM
 
-The system follows a two-stage retrieval architecture rather than naive single-chunk RAG:
+- **Fully Local & Private**
+  - Runs entirely on-premise via **Ollama** (Qwen 2.5:7b) or **llama.cpp** GGUF models
+  - Zero data leaves the machine — suitable for classified/internal documents
 
-1. **Document Extraction**
-   `extract_docs_from_pdf.py` processes each source PDF twice: once to pull plain text page-by-page using PyMuPDF (`fitz`), and once to detect and extract tables using `img2table`, converting each table into structured JSON via BeautifulSoup-based HTML parsing.
+- **Native Document Ingestion & Caching**
+  - High-speed PyMuPDF text normalization and native table extraction into clean Markdown tables
+  - Persistent disk caching in `.rag_cache/` with SHA-256 manifest validation for sub-second startup (<0.2s)
 
-2. **Parent/Child Splitting**
-   Extracted text is wrapped into LangChain `Document` objects ("parent" documents). A `RecursiveCharacterTextSplitter` then derives smaller "child" chunks (500 chars, 30 overlap) from each parent (2000 chars, 1000 overlap), with each child chunk tagged with its parent's ID in metadata.
+- **Dark Chat Web Interface**
+  - Minimalist ChatGPT-style UI with deep dark palette and Inter typography
+  - Previous chats sidebar with search, rename, and persistent local history
+  - Token-streamed answers with stop/regenerate, copy buttons, and code copying
+  - Expandable citation panels with per-source verification badges
+  - Document scope filter, abstention notices, suggestion cards, `Ctrl+K` new chat
+  - Full Markdown & table rendering with copy-to-clipboard
 
-3. **Embedding and Indexing**
-   Parent documents are embedded using a local `HuggingFaceEmbeddings` model (`all-MiniLM-L6-v2`) and indexed in a FAISS vector store. Parent documents are also cached in an `InMemoryStore` docstore, keyed by parent ID.
+- **FastAPI Backend**
+  - Interactive OpenAPI docs at `/docs`
+  - Streaming SSE support at `/api/chat`
+  - Document-scoped query filtering via `doc_name` parameter
 
-4. **Retrieval**
-   A `ParentDocumentRetriever` performs similarity search over the child-chunk embedding space, then resolves matches back to their full parent document — balancing retrieval precision (small chunks) with generation context quality (larger, coherent chunks).
+- **Production-Grade Faithfulness**
+  - Citation verification against retrieved passages
+  - Corrective retry on ungrounded claims (one strict-prompt reattempt)
+  - Abstention gate when cross-encoder confidence is too low
+  - Index-grounded vague-query detection (no hardcoded word lists)
+  - Eval harness with goldens (retrieval hits, keyword coverage, grounding rate)
 
-5. **Answer Generation**
-   The retrieved parent context and user query are wrapped into a Mistral-style instruction prompt (`[INST] ... [END]`) and passed to a locally-running GGUF model via `llama-cpp-python`, which returns a generated answer.
+---
 
-## Two Entry Points: Web App vs. CLI
+## Architecture Overview
 
-The repository exposes two independent ways to run the RAG pipeline, each with a different scope:
+```mermaid
+flowchart TD
+    PDF["docs/*.pdf"] -->|PyMuPDF Text & Tables| Ingest["docurag/indexing/parser.py"]
+    Ingest -->|Chunks & Markdown Tables| Cache[".rag_cache (FAISS + BM25)"]
 
-| | `rag.py` → `app.py` (Web) | `rag_cli.py` (CLI) |
+    UserQuery["User Question"] -->|Hybrid Query| RRF["Stage 1: Hybrid Search (FAISS + BM25 RRF)"]
+    Cache --> RRF
+    RRF -->|Top-20 Candidates| Rerank["Stage 2: Neural Cross-Encoder Reranker"]
+    Rerank -->|Top-5 Re-ranked Passages| Prompt["Grounded Prompt + Citations"]
+
+    Prompt --> LLM["LLM Engine (Ollama Qwen 2.5 / llama.cpp GGUF)"]
+    LLM --> Answer["Grounded Answer with Page Citations"]
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
 |---|---|---|
-| Document scope | **All** documents in `docs/` (via `select_all_docs()`), indexed together | **One** document, chosen interactively at startup (via `select_doc()`) |
-| Model selection | Hardcoded index passed to `select_model(index)` | Interactive menu via `select_model()` with no argument |
-| Interface | Flask REST API (`POST /ask`) + web UI (`index.html`) | Terminal loop (`input()` / `print()`) |
-| Use case | Persistent service querying the full enterprise document set | Quick, ad-hoc testing against a single document |
+| `GET` | `/` | Web-based chat interface |
+| `POST` | `/ask` | RAG question-answering with formatted HTML, raw text, and citations |
+| `POST` | `/api/chat` | JSON & SSE streaming endpoint (`stream: true`) |
+| `GET` | `/api/documents` | List indexed PDFs, file sizes, and chunk statistics |
+| `POST` | `/api/reindex` | Trigger fresh re-indexing of all documents in `docs/` |
+| `GET` | `/api/status` | System health, active LLM model, device, and chunk count |
 
-Both share the same underlying retrieval logic (parent/child chunking, FAISS, `ParentDocumentRetriever`) and the same local LLM inference approach, just wired up differently.
-
-## Supported Models
-
-Model selection is configurable via `models.py`, which maintains an indexed registry of local GGUF checkpoints. At runtime, `select_model()` either accepts a model index directly or presents an interactive menu:
-
-| Family        | Example Variants                                                    |
-|---------------|------------------------------------------------------------------------|
-| Mistral 7B    | Instruct v0.2 (Q6_K), Instruct v0.3 (Q4_1, Q8_0, F16), Code 16K QLoRA (Q8_0) |
-| Mistral Nemo  | Instruct 2407 (Q4_K_M)                                                |
-| Mistral Small | 24B Instruct 2501 (BF16, Q8_0, Q4_K_M)                                |
-| Mixtral 8x7B  | Instruct v0.1 (Q8_0), Base v0.1 (Q4_K_M)                              |
-| Lightweight   | Phi-2 (Q4_K_M), TinyLlama 1.1B Chat (Q5_K_M)                          |
-
-Models are swapped without code changes by editing the model index passed to `select_model()`, making it straightforward to trade off inference speed against answer quality depending on available hardware.
-
-## Tech Stack
-
-| Layer                | Technology                                              |
-|----------------------|------------------------------------------------------------|
-| LLM Inference        | `llama-cpp-python` (GGUF quantized models)               |
-| Orchestration        | LangChain (`langchain-community`, `langchain-core`, `langchain-text-splitters`) |
-| Retrieval            | `ParentDocumentRetriever`, `InMemoryStore`                |
-| Vector Store         | FAISS                                                     |
-| Embeddings           | HuggingFace `sentence-transformers` (`all-MiniLM-L6-v2`) |
-| PDF Text Extraction  | PyMuPDF (`fitz`)                                          |
-| PDF Table Extraction | `img2table`, BeautifulSoup                                |
-| Backend              | Python, Flask, Flask-CORS                                  |
-| Frontend             | HTML templates, static assets                             |
-
-## Prerequisites
-
-- Python 3.8 or higher
-- `pip` for package management
-- Local GGUF model file(s) downloaded and placed under `/models/` (paths configured in `models.py`)
-- A local copy of the `all-MiniLM-L6-v2` embedding model under `/models/all-MiniLM-L6-v2`
-- Sufficient RAM/VRAM for your chosen quantized model (lightweight options like TinyLlama or Phi-2 are recommended for constrained hardware)
-
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/adhvaith267/DocuRAG.git
-cd DocuRAG
-```
-
-### 2. Create and activate a virtual environment (recommended)
-
-```bash
-python -m venv venv
-source venv/bin/activate      # On Windows: venv\Scripts\activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Add your documents
-
-Place PDF files into the `docs/` directory. All files here are picked up by `select_all_docs()` for the web app, or offered one-by-one by `select_doc()` for the CLI.
-
-### 5. Configure model paths
-
-Update the `path` values in `models.py` to point to your local GGUF model files, and set the embedding model path in `rag.py` / `rag_cli.py` if it differs from `/models/all-MiniLM-L6-v2`.
-
-## Configuration
-
-| File                       | Purpose                                                                 |
-|----------------------------|--------------------------------------------------------------------------|
-| `models.py`                | Registry of available GGUF models and interactive selector             |
-| `select_docs.py`           | `select_doc()` — interactive single-file picker for the CLI; `select_all_docs()` — returns every file in `docs/` for the web app |
-| `extract_docs_from_pdf.py` | Text and table extraction logic for source PDFs                        |
-| `rag.py`                   | Multi-document RAG pipeline (chunking, embedding, indexing, retrieval) used by `app.py` |
-| `rag_cli.py`               | Standalone single-document RAG pipeline with an interactive terminal chat loop |
-| `app.py`                   | Flask app exposing `GET /` (renders UI with selected documents) and `POST /ask` (retrieval + generation endpoint) |
-
-## Usage
-
-### Web interface
-
-```bash
-python app.py
-```
-
-Open your browser and navigate to:
-
-```
-http://127.0.0.1:5000
-```
-
-The homepage (`GET /`) renders `index.html` along with the list of currently selected documents (via `select_all_docs()`). Questions are submitted through a JSON API:
-
-**`POST /ask`**
-
-```json
-{ "question": "What are the payment terms in the contract?" }
-```
-
-Internally, this route:
-1. Retrieves relevant parent-document context using the `ParentDocumentRetriever`
-2. Joins the retrieved chunks into a single context block
-3. Wraps the context and question in an instruction-style prompt (`[INST] ... [END]`, matching Mistral's chat format)
-4. Passes the prompt to the local LLM via `ask()`
-5. Converts the model's response into HTML paragraphs before returning it
-
-**Response**
-
-```json
-{ "response": "<p>...</p><p>...</p>" }
-```
-
-`flask-cors` is enabled, so the API can be called from a separate frontend origin if needed.
-
-### Command-line interface
-
-```bash
-python rag_cli.py
-```
-
-You'll be prompted to:
-1. Select a single document from `docs/` (via `select_doc()`)
-2. Select a model from the numbered menu (via `select_model()`)
-
-Then ask questions directly in the terminal:
-
-```
-Your question please [Enter 'exit' to Exit]: What is the notice period for termination?
-```
-
-Type `exit` to end the session. This mode is useful for quickly testing retrieval quality or a new model against a single document without spinning up the web app.
+---
 
 ## Project Structure
 
 ```
-rag-model/
-├── docs/                       # Source documents indexed by the app / offered by the CLI
-├── rawdocs/                    # Raw/unprocessed source PDF documents
+DocuRAG/
+├── app.py                # Uvicorn launcher (simple entrypoint)
+├── docurag/              # Main application package
+│   ├── __init__.py       # Package version + lazy engine exports
+│   ├── __main__.py       # `python -m docurag` (CLI) / `python -m docurag serve`
+│   ├── cli.py            # Interactive terminal CLI
+│   ├── core/
+│   │   ├── config.py     # Settings (env / .env) + path & tuning constants
+│   │   ├── logger.py     # Rich colorized structured logging
+│   │   └── exceptions.py # Shared domain exceptions
+│   ├── indexing/
+│   │   ├── parser.py     # PDF text/table extraction, headings, OCR fallback
+│   │   └── chunker.py    # Recursive text splitting with overlap
+│   ├── retrieval/
+│   │   └── hybrid.py     # FAISS + BM25 RRF + cross-encoder reranker
+│   ├── llm/
+│   │   ├── provider.py   # LLM connectors (Ollama & llama-cpp-python)
+│   │   └── prompts.py    # Grounded system prompt
+│   ├── engine/
+│   │   ├── pipeline.py   # RAG orchestration + singleton accessor
+│   │   └── grounding.py  # Citation verification + refusal detection
+│   ├── eval/
+│   │   ├── harness.py    # Goldens-based eval (context/coverage/grounding)
+│   │   └── cli.py        # `python -m docurag eval goldens.json`
+│   └── api/
+│       ├── routes.py     # FastAPI app factory + route definitions
+│       ├── schemas.py    # Pydantic request/response models
+│       └── deps.py       # Shared engine dependency
+├── eval/
+│   └── goldens.example.json  # Sample eval cases (copy + adapt)
+├── docs/                 # Source PDF documents (git-ignored, keep .gitkeep)
+├── models/               # Local model binaries (git-ignored, keep .gitkeep)
 ├── static/
-│   └── images/                 # Static assets for the web UI
-├── templates/                 
-│   └── index.html              # Web UI HTML templates
-├── .gitignore
-├── app.py                      # Flask web application entry point
-├── extract_docs_from_pdf.py    # PDF text and table extraction
-├── models.py                   # GGUF model registry and selector
-├── rag.py                      # Multi-document RAG pipeline (used by app.py)
-├── rag_cli.py                  # Standalone single-document CLI with its own retriever/LLM
-├── select_docs.py              # Document selection utilities (single-file and all-files)
-├── requirements.txt            # Python dependencies
-└── README.md                   # Project documentation
+│   └── js/marked.min.js  # Offline Markdown parser
+└── templates/
+    └── index.html        # ChatGPT-style dark chat UI
 ```
+
+---
+
+## BHEL Employee Lifecycle & Day in the Life
+
+This section shows how a BHEL employee uses DocuRAG end-to-end — from adding documents to getting grounded answers for real work scenarios.
+
+### 1. Initial Setup (One-time, ~5 minutes)
+
+**IT Admin / Power User:**
+```bash
+# 1. Clone repo to on-prem server or workstation
+git clone https://github.com/yourorg/docurag.git
+cd docurag
+
+# 2. Create venv & install deps (includes sentence-transformers, FAISS, llama-cpp)
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Start Ollama locally (runs as a background service)
+ollama serve &
+ollama pull qwen2.5:7b          # ~4.7GB, downloads once
+# Or for air-gapped: place GGUF in models/ and set LLM_PROVIDER=llamacpp
+
+# 4. Launch the server
+python app.py
+# Server running at http://localhost:5000
+```
+
+### 2. Document Ingestion (Department Admin)
+
+**HR / Training / Engineering Admin drops PDFs into `docs/`:**
+
+```
+docs/
+├── BHEL_Employee_Handbook_2024.pdf
+├── Safety_Manual_Boiler_Division.pdf
+├── Quality_Procedures_ISO_9001.pdf
+├── Curriculum_Syllabi_CSE_2026.pdf
+├── Vendor_Qualification_Checklist.pdf
+└── Project_Execution_Guidelines.pdf
+```
+
+**Trigger re-index (or wait for auto-detect on next query):**
+```bash
+curl -X POST http://localhost:5000/api/reindex
+# Or click "Reindex" in the web UI header
+```
+*First index: ~30-60s for 500-page corpus. Subsequent runs: incremental (only changed files re-encoded).*
+
+### 3. Daily Usage — Role-Based Scenarios
+
+| Role | Typical Questions | Value |
+|------|-------------------|-------|
+| **Graduate Engineer Trainee (GET)** | *"What's the passing criteria for B.Tech CSE 2026 batch?"* | Instant answer with page citation from syllabus PDF — no hunting through 200-page document |
+| **Senior Engineer (Design)** | *"Flange pressure rating class 300 temperature derating formula"* | Finds exact table row in ASME code extract; copies Markdown table to calculation sheet |
+| **Quality Auditor** | *"ISO 9001 clause 8.5.1 production control requirements"* | Retrieves verbatim clause + surrounding context; verified citation badge = audit-ready |
+| **Safety Officer** | *"Hot work permit validity period in boiler division"* | Gets precise policy clause; cross-references with vendor checklist automatically |
+| **Procurement Lead** | *"Vendor qualification documents required for thermal equipment"* | Extracts checklist table; exports as Markdown for RFQ attachment |
+| **Project Manager** | *"Milestone payment terms in EPC contract template"* | Finds clause across contract PDFs; cites page for legal review |
+
+### 4. Web UI Workflow (ChatGPT-style)
+
+```
+1. Open http://localhost:5000
+2. Sidebar: "New Chat" (Ctrl+K) → type question
+3. Select document scope: [All Documents ▼] → "Safety_Manual_Boiler_Division.pdf"
+4. Streamed answer appears with:
+   - ✅ Verified citation badges (green = grounded, yellow = unverified)
+   - Expandable source panels showing exact page snippet
+   - Copy button per source / copy full answer
+5. "Regenerate" if needed; "Stop" mid-stream
+6. History auto-saved → searchable in sidebar
+```
+
+### 5. API Integration (Automation)
+
+**Slack bot / internal portal / CI gate:**
+```python
+import httpx
+
+resp = httpx.post("http://localhost:5000/ask", json={
+    "question": "What is the minimum passing grade for CS201?",
+    "top_n": 5,
+    "doc_name": "Curriculum_Syllabi_CSE_2026.pdf"
+}).json()
+
+# resp["response"] — HTML formatted
+# resp["raw_text"] — plain text for tickets
+# resp["sources"] — [{"document": "...", "page": 12, "score": 0.87, "snippet": "..."}]
+# resp["grounding"]["grounding_rate"] — 1.0 = fully grounded
+```
+
+### 6. Evaluation & Quality Assurance
+
+**QA Team validates answer quality on golden set:**
+```bash
+cp eval/goldens.example.json eval/goldens.json
+# Edit goldens.json with your document-specific Q&A pairs
+python -m docurag eval eval/goldens.json
+```
+
+**Output:**
+```
+Eval Results
+┏━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┓
+┃ # ┃ Question                              ┃ Ctx     ┃ Cover ┃ Ground ┃ Result  ┃
+┣━━━┿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━┫
+┃ 1 ┃ Passing grade for B.Tech CSE?         ┃ ✓       ┃ 1.00  ┃ 1.00   ┃ PASS    ┃
+┃ 2 ┃ ISO 9001 production control clauses   ┃ ✓       ┃ 0.80  ┃ 0.83   ┃ PASS    ┃
+┃ 3 ┃ Hot work permit validity              ┃ ✓       ┃ 1.00  ┃ 1.00   ┃ PASS    ┃
+┗━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━┻━━━━━━━┻━━━━━━━━━━┻━━━━━━━━━┛
+{"total": 3, "passed": 3, "pass_rate": 1.0, "context_hit_rate": 1.0, ...}
+```
+
+---
+
+## Quick Start
+
+### 1. Prerequisites
+
+- Python 3.10+
+- [Ollama](https://ollama.com/) running locally with `qwen2.5:7b`:
+  ```bash
+  ollama run qwen2.5:7b
+  ```
+  *For air-gapped environments: download a GGUF (e.g., `tinyllama-1.1b-chat-v1.0.Q5_K_M.gguf`) to `models/` and set `LLM_PROVIDER=llamacpp` in `.env`.*
+
+### 2. Install Dependencies
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/docurag.git
+cd docurag
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate      # Linux / macOS
+# venv\Scripts\activate       # Windows
+
+# Install requirements
+pip install -r requirements.txt
+```
+
+### 3. Add Documents
+
+Place your PDF files in the `docs/` directory:
+```bash
+cp /path/to/your/documents/*.pdf docs/
+```
+
+### 4. Run the Server
+
+```bash
+python app.py
+# or
+python -m docurag serve
+```
+
+- **Web Interface**: [http://localhost:5000](http://localhost:5000)
+- **API Docs**: [http://localhost:5000/docs](http://localhost:5000/docs)
+
+### 5. Run the CLI (Optional)
+
+```bash
+# Single question
+python -m docurag -q "What is the passing criteria?"
+
+# Interactive REPL
+python -m docurag
+
+# Rebuild index first
+python -m docurag --reindex
+```
+
+### 6. Run an Eval (Optional)
+
+```bash
+cp eval/goldens.example.json eval/goldens.json
+# edit eval/goldens.json to match your PDFs
+python -m docurag eval eval/goldens.json
+```
+
+---
+
+## Configuration
+
+Settings can be customized via environment variables or a `.env` file (see `docurag/core/config.py`):
+
+| Variable | Default | Description |
+|---|---|---|
+| `HOST` | `0.0.0.0` | Server host address |
+| `PORT` | `5000` | Server port |
+| `CHUNK_SIZE` | `650` | Character/token chunk length |
+| `CHUNK_OVERLAP` | `120` | Overlap between consecutive chunks |
+| `TOP_K_CANDIDATES` | `20` | Candidate chunks from stage-1 hybrid search |
+| `TOP_N_RERANK` | `5` | Passages selected after neural reranking |
+| `LLM_PROVIDER` | `auto` | Provider priority: `auto`, `ollama`, or `llamacpp` |
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Target Ollama model name |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama service endpoint |
+| `USE_RERANKER` | `true` | Enable/disable neural cross-encoder reranking |
+| `RERANK_FUSION_ALPHA` | `0.85` | Blend of cross-encoder vs RRF score for final ordering |
+| `MMR_ENABLED` | `true` | Diversify final top-N with Maximal Marginal Relevance |
+| `MMR_LAMBDA` | `0.5` | MMR relevance/diversity trade-off (1.0 = relevance only) |
+| `ENABLE_ABSTENTION` | `true` | Abstain when the best reranker score is too weak |
+| `ABSTAIN_MIN_SCORE` | `-10.0` | Minimum best cross-encoder score to attempt an answer |
+| `ENABLE_CORRECTIVE_RETRY` | `true` | One strict-prompt retry on ungrounded citations |
+| `ENABLE_OCR` | `true` | OCR scanned pages via tesseract CLI (if installed) |
+| `OCR_DPI` | `300` | Render resolution for OCR pages |
+| `OCR_MIN_CHARS` | `50` | Below this, image pages trigger OCR |
+
+---
+
+## Faithfulness Guarantees (Why Trust This?)
+
+1. **Citation Verification** — Every `[Document, Page X]` marker in the answer is checked against the actual retrieved chunks. Unverified citations are flagged in the UI and API response.
+
+2. **Corrective Retry** — If the LLM produces ungrounded citations, a second strict-prompt attempt is made automatically. The better of the two answers is returned.
+
+3. **Abstention Gate** — When the cross-encoder's best score falls below `ABSTAIN_MIN_SCORE` (default -10.0 logits), the engine refuses to answer rather than hallucinate.
+
+4. **Index-Grounded Specificity** — Vague queries ("hi", "hello", "anything?") are detected by checking if query tokens exist in *some-but-not-most* indexed chunks. No hardcoded stopword lists — works for any corpus.
+
+5. **Eval Harness** — Goldens-based regression testing measures retrieval hit rate, keyword coverage, and grounding rate. CI-friendly exit codes.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+## Contributing
+
+Issues and PRs welcome. Please run the eval harness before submitting:
+
+```bash
+python -m docurag eval eval/goldens.json
+```
+
+---
+
+*Built for BHEL — Local. Private. Grounded.*

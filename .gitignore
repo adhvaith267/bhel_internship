@@ -1,12 +1,22 @@
-# Ignore documents
+# Ignore documents (private PDFs, never commit)
 docs/*
 !docs/.gitkeep
-rawdocs/*
-!rawdocs/.gitkeep
+
+# Ignore local model binaries & caches (downloaded at setup time)
+models/*
+!models/.gitkeep
+*.gguf
 
 # Ignore Python cache
 __pycache__/
 *.pyc
+*.pyo
 
 # Ignore environment file
-.env 
+.env
+
+# Ignore virtual environment, caches & local data
+venv/
+.rag_cache/
+.hypothesis/
+.pytest_cache/
