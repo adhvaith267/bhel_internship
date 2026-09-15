@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -20,43 +19,6 @@ from bhel_internship.core.config import settings
 from bhel_internship.core.logger import logger
 from bhel_internship.engine.pipeline import EnterpriseRAGEngine
 from bhel_internship.indexing.parser import get_all_pdf_paths
-
-
-def text_to_html(text: str) -> str:
-    """Convert markdown-like plain text to clean semantic HTML for the UI."""
-    lines = text.strip().split("\n")
-    html_out: list[str] = []
-    in_list = False
-
-    for line in lines:
-        s = line.strip()
-        if not s:
-            if in_list:
-                html_out.append("</ul>")
-                in_list = False
-            continue
-
-        if s.startswith(("- ", "* ", "• ")):
-            if not in_list:
-                html_out.append("<ul>")
-                in_list = True
-            html_out.append(f"<li>{_format_inline(s[2:].strip())}</li>")
-        else:
-            if in_list:
-                html_out.append("</ul>")
-                in_list = False
-            html_out.append(f"<p>{_format_inline(s)}</p>")
-
-    if in_list:
-        html_out.append("</ul>")
-
-    return "".join(html_out)
-
-
-def _format_inline(text: str) -> str:
-    text = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", text)
-    text = re.sub(r"`(.*?)`", r"<code>\1</code>", text)
-    return text
 
 
 @asynccontextmanager
@@ -97,9 +59,6 @@ def create_app() -> FastAPI:
             {
                 "selected_documents": pdf_files,
                 "model_name": engine.llm.active_model_name,
-                "num_chunks": len(engine.retriever.chunks),
-                "num_docs": len(pdf_files),
-                "reranker_active": engine.retriever.reranker is not None,
             },
             # Never cache the SPA shell: the UI iterates fast and must
             # always match the running backend.
@@ -121,7 +80,7 @@ def create_app() -> FastAPI:
 
         result = engine.query(question=question, top_n=payload.top_n, doc_name=payload.doc_name)
         return {
-            "response": text_to_html(result["response"]),
+            "response": result["response"],
             "raw_text": result["response"],
             "sources": result["sources"],
             "latency_ms": result["latency_ms"],

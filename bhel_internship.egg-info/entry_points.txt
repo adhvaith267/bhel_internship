@@ -1,0 +1,2 @@
+[console_scripts]
+bhel-internship = bhel_internship.__main__:main

@@ -11,6 +11,12 @@ from bhel_internship.core.config import (
 )
 from bhel_internship.core.logger import logger
 
+
+def _default_stop_sequences() -> list[str]:
+    """Default stop sequences that work across common chat templates."""
+    return ["\nHuman:", "\n\nHuman:", "\nUser:", "\n\nUser:", "[END]"]
+
+
 class LLMEngine:
     def __init__(self):
         self.provider = LLM_PROVIDER.lower()
@@ -98,8 +104,8 @@ class LLMEngine:
                     )
                     return answer
             except Exception as e:
-                logger.error(f"Ollama generation error: {e}. Attempting llama.cpp fallback...")
-                return self._generate_llamacpp(prompt, max_tokens, temperature)
+                logger.error(f"Ollama generation error: {e}")
+                raise
         else:
             return self._generate_llamacpp(prompt, max_tokens, temperature)
 
@@ -112,7 +118,7 @@ class LLMEngine:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=0.9,
-                stop=["</s>", "<|im_end|>", "[END]"]
+                stop=_default_stop_sequences()
             )
             text = res["choices"][0]["text"].strip()
             logger.info(f"[RAG.LLM] llama.cpp generation finished in {time.time()-t0:.2f}s")
@@ -160,7 +166,7 @@ class LLMEngine:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 stream=True,
-                stop=["</s>", "<|im_end|>", "[END]"]
+                stop=_default_stop_sequences()
             ):
                 text_chunk = token_data["choices"][0]["text"]
                 yield text_chunk

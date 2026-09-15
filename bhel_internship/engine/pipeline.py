@@ -191,7 +191,8 @@ class EnterpriseRAGEngine:
 Question:
 {question}
 
-Provide a comprehensive, accurate answer based solely on the context above:"""
+Provide a comprehensive, accurate answer based solely on the context above.
+Cite every factual claim using [DocumentName, Page X] format exactly as shown in the context passages."""
 
         # 5. Generate answer
         answer = self.llm.generate(
@@ -293,7 +294,8 @@ Provide a comprehensive, accurate answer based solely on the context above:"""
 Question:
 {question}
 
-Provide a comprehensive, accurate answer based solely on the context above:"""
+Provide a comprehensive, accurate answer based solely on the context above.
+Cite every factual claim using [DocumentName, Page X] format exactly as shown in the context passages."""
 
         for token in self.llm.stream_generate(user_prompt, system_prompt=SYSTEM_PROMPT):
             yield {"type": "token", "data": token}

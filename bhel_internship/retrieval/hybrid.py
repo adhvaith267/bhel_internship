@@ -478,10 +478,12 @@ class HybridRAGRetriever:
         k_candidates = min(top_k, pool_size)
 
         # --- Stage 1a: Dense Search (FAISS) ---
+        # When filtering by document, search wider to ensure enough candidates survive the filter.
+        search_k = min(top_k * 4, len(self.chunks)) if allowed_ids is not None else min(top_k, len(self.chunks))
         query_vector = self.embedding_model.encode([query], normalize_embeddings=True)
         _, dense_indices = self.faiss_index.search(
             np.array(query_vector, dtype=np.float32),
-            min(top_k, len(self.chunks)),
+            search_k,
         )
         dense_ranked_ids = [
             int(idx) for idx in dense_indices[0] if idx >= 0 and _is_allowed(int(idx))
