@@ -13,7 +13,7 @@
 
 ## Overview
 
-The Enterprise RAG Engine provides a fully local, GPU-accelerated document QA system that retrieves grounded answers with exact page citations from indexed PDFs. No data ever leaves the machine.
+The Enterprise RAG Engine provides a fully local, GPU-accelerated document QA system that retrieves grounded answers with exact page citations from indexed PDFs. No data ever leaves the machine. The only entry point is the web interface — no terminal chat, no CLI tools.
 
 ---
 
@@ -111,16 +111,11 @@ bhel_internship/              # Repository root
 │   │   └── prompts.py        # Grounded system prompt
 │   ├── retrieval/            # Hybrid retrieval
 │   │   └── hybrid.py         # FAISS + BM25 + RRF + cross-encoder reranker
-│   ├── eval/                 # Evaluation tools
-│   │   ├── harness.py        # Goldens-based eval (context/coverage/grounding)
-│   │   ├── cli.py            # `python -m src eval goldens.json`
-│   │   └── goldens.example.json
 │   ├── ui/                   # Web UI
 │   │   └── templates/
 │   │       └── index.html    # ChatGPT-style interface
 │   ├── __init__.py
-│   ├── __main__.py           # `python -m src serve|eval`
-│   └── cli.py                # Interactive terminal chat
+│   └── __main__.py           # `python -m src` — starts the web server
 ├── docs/                     # Drop PDFs here to index them
 ├── models/                   # Place GGUF model files here
 ├── .env.example              # Environment configuration template
@@ -156,23 +151,26 @@ Place PDF files in the `docs/` directory:
 cp /path/to/documents/*.pdf docs/
 ```
 
-### 3. Run the RAG Engine
+### 3. Start the Server
 
 ```bash
-python -m src serve
+python -m src
 ```
 
-**Access the interface:** `http://localhost:5000`
+Open `http://localhost:5000` in your browser.
 
-### 4. Basic Usage
+### 4. Using the Web Interface
 
-**Web Interface (ChatGPT-style):**
-- Chat directly in your browser
-- Document scope filtering via dropdown
-- Citation verification badges
-- Copy/cite functionality
+- Type questions in the chat box and press Enter
+- Filter context to a specific document using the dropdown
+- Citations are shown with page numbers and relevance scores
+- Use the streaming API for token-by-token responses
 
-**API Usage:**
+---
+
+## API Usage
+
+**Single question:**
 ```python
 import httpx
 
@@ -184,6 +182,7 @@ response = httpx.post(
         "doc_name": "B.TechCSE-2026-27-Curriculum-Syllabi.pdf"
     }
 )
+print(response.json())
 ```
 
 **Streaming:**
@@ -195,12 +194,6 @@ with httpx.stream("POST", "http://localhost:5000/api/chat",
     for line in r.iter_lines():
         if line.startswith("data:") and "[DONE]" not in line:
             print(json.loads(line[5:]))
-```
-
-**Terminal Chat:**
-```bash
-python -m src                          # interactive chat
-python -m src eval goldens.json       # run evaluation harness
 ```
 
 ---
