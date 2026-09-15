@@ -1,5 +1,3 @@
-<div align="center">
-
 # Enterprise RAG Engine
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
@@ -10,8 +8,6 @@
 **A high-performance, privacy-preserving Retrieval-Augmented Generation engine for enterprise document intelligence.**
 
 [Features](#key-features) · [Architecture](#architecture-overview) · [API](#api-endpoints) · [Setup](#quick-start) · [Configuration](#configuration)
-
-</div>
 
 ---
 
@@ -92,32 +88,36 @@ flowchart TD
 ## Project Structure
 
 ```
-bhel_internship/
-├── core/              # Engine components
-│   ├── config.py     # Settings + path & tuning constants
-│   ├── logger.py     # Rich colorized structured logging
-│   └── exceptions.py # Shared domain exceptions
-├── indexing/          # Document processing
-│   ├── parser.py     # PDF text/table extraction, headings, OCR fallback
-│   └── chunker.py    # Recursive text splitting with overlap
-├── retrieval/         # Search & ranking
-│   └── hybrid.py     # FAISS + BM25 RRF + cross-encoder reranker + MMR
-├── llm/              # Language model integration
-│   ├── provider.py   # LLM connectors (Ollama & llama-cpp-python)
-│   └── prompts.py    # Grounded system prompt
-├── engine/           # RAG orchestration
-│   ├── pipeline.py   # RAG orchestration + singleton accessor
-│   └── grounding.py  # Citation verification + refusal detection
-├── api/              # FastAPI backend
-│   ├── routes.py     # FastAPI app factory + route definitions
-│   ├── schemas.py    # Pydantic request/response models
-│   └── deps.py       # Shared engine dependency
-├── ui/               # Web UI (single entrypoint)
-│   ├── templates/
-│   │   └── index.html # ChatGPT-style dark chat UI
-│   └── static/       # CSS & JavaScript
-├── .env.example      # Environment config
-└── .gitignore
+Enterprise RAG Engine Project Structure
+
+bhel_internship/          # Main package
+├── api/                  # FastAPI backend
+│   ├── routes.py        # FastAPI app factory + route definitions
+│   ├── schemas.py       # Pydantic request/response models
+│   └── deps.py          # Shared engine dependency
+├── core/                 # Core engine components
+│   ├── config.py        # Settings + path & tuning constants
+│   ├── logger.py        # Rich colorized structured logging
+│   └── exceptions.py   # Shared domain exceptions
+├── engine/               # RAG orchestration
+│   ├── pipeline.py      # RAG orchestration + singleton accessor
+│   └── grounding.py     # Citation verification + refusal detection
+├── indexing/             # Document processing
+│   ├── parser.py       # PDF text/table extraction, headings, OCR fallback
+│   └── chunker.py      # Recursive text splitting with overlap
+├── llm/                 # Language model integration
+│   ├── provider.py      # LLM connectors (Ollama & llama-cpp-python)
+│   └── prompts.py       # Grounded system prompt
+├── eval/                # Evaluation tools
+│   ├── harness.py       # Goldens-based eval (context/coverage/grounding)
+│   └── cli.py           # `python -m bhel_internship eval goldens.json`
+├── ui/                  # Web UI (single entrypoint for BHEL employees)
+│   ├── templates/      # Templates (ChatGPT-style interface)
+│   │   └── index.html
+│   └── static/         # CSS & JavaScript
+├── .env.example         # Environment configuration
+├── .gitignore
+└── requirements.txt     # Dependencies for setup
 ```
 
 ---
