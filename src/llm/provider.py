@@ -3,8 +3,8 @@ import time
 from typing import Generator, Optional
 import httpx
 
-from bhel_internship.core.config import LLM_PROVIDER, OLLAMA_BASE_URL, OLLAMA_MODEL, GGUF_MODEL_PATH
-from bhel_internship.core.logger import logger
+from src.core.config import LLM_PROVIDER, OLLAMA_BASE_URL, OLLAMA_MODEL, GGUF_MODEL_PATH
+from src.core.logger import logger
 
 
 def _default_stop_sequences() -> list[str]:

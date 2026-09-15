@@ -88,36 +88,42 @@ flowchart TD
 ## Project Structure
 
 ```
-Enterprise RAG Engine Project Structure
-
-bhel_internship/          # Main package
-├── api/                  # FastAPI backend
-│   ├── routes.py        # FastAPI app factory + route definitions
-│   ├── schemas.py       # Pydantic request/response models
-│   └── deps.py          # Shared engine dependency
-├── core/                 # Core engine components
-│   ├── config.py        # Settings + path & tuning constants
-│   ├── logger.py        # Rich colorized structured logging
-│   └── exceptions.py   # Shared domain exceptions
-├── engine/               # RAG orchestration
-│   ├── pipeline.py      # RAG orchestration + singleton accessor
-│   └── grounding.py     # Citation verification + refusal detection
-├── indexing/             # Document processing
-│   ├── parser.py       # PDF text/table extraction, headings, OCR fallback
-│   └── chunker.py      # Recursive text splitting with overlap
-├── llm/                 # Language model integration
-│   ├── provider.py      # LLM connectors (Ollama & llama-cpp-python)
-│   └── prompts.py       # Grounded system prompt
-├── eval/                # Evaluation tools
-│   ├── harness.py       # Goldens-based eval (context/coverage/grounding)
-│   └── cli.py           # `python -m bhel_internship eval goldens.json`
-├── ui/                  # Web UI (single entrypoint for BHEL employees)
-│   ├── templates/      # Templates (ChatGPT-style interface)
-│   │   └── index.html
-│   └── static/         # CSS & JavaScript
-├── .env.example         # Environment configuration
+bhel_internship/              # Repository root
+├── src/                      # Python package (all source code)
+│   ├── api/                  # FastAPI backend
+│   │   ├── routes.py         # FastAPI app factory + route definitions
+│   │   ├── schemas.py        # Pydantic request/response models
+│   │   └── deps.py           # Shared engine dependency
+│   ├── core/                 # Core engine components
+│   │   ├── config.py         # Settings + path & tuning constants
+│   │   ├── logger.py         # Rich colorized structured logging
+│   │   └── exceptions.py     # Shared domain exceptions
+│   ├── engine/               # RAG orchestration
+│   │   ├── pipeline.py       # RAG orchestration + singleton accessor
+│   │   └── grounding.py      # Citation verification + refusal detection
+│   ├── indexing/             # Document processing
+│   │   ├── parser.py         # PDF text/table extraction, headings, OCR fallback
+│   │   └── chunker.py        # Recursive text splitting with overlap
+│   ├── llm/                  # Language model integration
+│   │   ├── provider.py       # LLM connectors (Ollama & llama-cpp-python)
+│   │   └── prompts.py        # Grounded system prompt
+│   ├── retrieval/            # Hybrid retrieval
+│   │   └── hybrid.py         # FAISS + BM25 + RRF + cross-encoder reranker
+│   ├── eval/                 # Evaluation tools
+│   │   ├── harness.py        # Goldens-based eval (context/coverage/grounding)
+│   │   ├── cli.py            # `python -m src eval goldens.json`
+│   │   └── goldens.example.json
+│   ├── ui/                   # Web UI
+│   │   └── templates/
+│   │       └── index.html    # ChatGPT-style interface
+│   ├── __init__.py
+│   ├── __main__.py           # `python -m src serve|eval`
+│   └── cli.py                # Interactive terminal chat
+├── docs/                     # Drop PDFs here to index them
+├── models/                   # Place GGUF model files here
+├── .env.example              # Environment configuration template
 ├── .gitignore
-└── requirements.txt     # Dependencies for setup
+└── requirements.txt          # Python dependencies
 ```
 
 ---
@@ -151,7 +157,7 @@ cp /path/to/documents/*.pdf docs/
 ### 3. Run the RAG Engine
 
 ```bash
-python -m bhel_internship serve
+python -m src serve
 ```
 
 **Access the interface:** `http://localhost:5000`

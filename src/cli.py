@@ -2,9 +2,9 @@
 """Enterprise RAG Engine interactive terminal CLI.
 
 Usage:
-    python -m bhel_internship.cli                  # interactive chat
-    python -m bhel_internship.cli -q "question?"   # single question
-    python -m bhel_internship.cli --reindex        # rebuild index then chat
+    python -m src.cli                  # interactive chat
+    python -m src.cli -q "question?"   # single question
+    python -m src.cli --reindex        # rebuild index then chat
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 
-from bhel_internship.core.logger import logger
-from bhel_internship.engine.pipeline import get_rag_engine
+from src.core.logger import logger
+from src.engine.pipeline import get_rag_engine
 
 console = Console()
 

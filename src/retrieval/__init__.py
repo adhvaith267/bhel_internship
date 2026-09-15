@@ -1,4 +1,4 @@
-from bhel_internship.retrieval.hybrid import (
+from src.retrieval.hybrid import (
     HybridRAGRetriever,
     expand_query_variants,
     tokenize_bm25,

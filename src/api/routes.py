@@ -13,12 +13,12 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from bhel_internship.api.deps import get_engine
-from bhel_internship.api.schemas import AskRequest, ChatRequest
-from bhel_internship.core.config import settings
-from bhel_internship.core.logger import logger
-from bhel_internship.engine.pipeline import EnterpriseRAGEngine
-from bhel_internship.indexing.parser import get_all_pdf_paths
+from src.api.deps import get_engine
+from src.api.schemas import AskRequest, ChatRequest
+from src.core.config import settings
+from src.core.logger import logger
+from src.engine.pipeline import EnterpriseRAGEngine
+from src.indexing.parser import get_all_pdf_paths
 
 
 @asynccontextmanager
@@ -164,5 +164,5 @@ def create_app() -> FastAPI:
         }
 
 
-# Default application instance for `uvicorn main:app` / `uvicorn bhel_internship.api.routes:app`.
+# Default application instance for `uvicorn main:app` / `uvicorn src.api.routes:app`.
 app = create_app()

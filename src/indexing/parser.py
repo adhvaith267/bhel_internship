@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple
 import fitz  # PyMuPDF
 
-from bhel_internship.core.config import (
+from src.core.config import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     DOCS_DIR,
@@ -16,8 +16,8 @@ from bhel_internship.core.config import (
     OCR_DPI,
     OCR_MIN_CHARS,
 )
-from bhel_internship.core.logger import logger
-from bhel_internship.indexing.chunker import split_text_recursive
+from src.core.logger import logger
+from src.indexing.chunker import split_text_recursive
 
 
 def compute_file_hash(filepath: Path) -> str:

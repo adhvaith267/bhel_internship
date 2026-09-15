@@ -1,15 +1,15 @@
 import time
 from typing import Dict, Any, List, Optional, Generator
-from bhel_internship.retrieval.hybrid import HybridRAGRetriever
-from bhel_internship.llm.provider import LLMEngine
-from bhel_internship.llm.prompts import SYSTEM_PROMPT
-from bhel_internship.core.config import (
+from src.retrieval.hybrid import HybridRAGRetriever
+from src.llm.provider import LLMEngine
+from src.llm.prompts import SYSTEM_PROMPT
+from src.core.config import (
     ENABLE_ABSTENTION,
     ABSTAIN_MIN_SCORE,
     ENABLE_CORRECTIVE_RETRY,
 )
-from bhel_internship.core.logger import logger
-from bhel_internship.engine.grounding import (
+from src.core.logger import logger
+from src.engine.grounding import (
     ABSTENTION_MESSAGE,
     build_clarification,
     empty_report,

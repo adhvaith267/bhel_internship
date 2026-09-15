@@ -5,7 +5,7 @@ server options. Values can be overridden via environment variables or a
 `.env` file at the repository root.
 
 Module-level constants (``HOST``, ``PORT``, ...) are kept so existing
-``from bhel_internship.core.config import HOST`` imports keep working.
+``from src.core.config import HOST`` imports keep working.
 """
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Repository root: bhel_internship/core/config.py -> core -> bhel_internship -> root.
+# Repository root: src/core/config.py -> core/ -> src/ -> repo root.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-# Package directory (bhel_internship/): where ui/ lives after restructure.
+# Package directory (src/): where ui/, eval/, etc. live.
 _PKG_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")

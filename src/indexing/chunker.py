@@ -1,5 +1,5 @@
 from typing import List
-from bhel_internship.core.config import CHUNK_SIZE, CHUNK_OVERLAP
+from src.core.config import CHUNK_SIZE, CHUNK_OVERLAP
 
 
 def split_text_recursive(
