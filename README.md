@@ -40,6 +40,7 @@ The Enterprise RAG Engine provides a fully local, GPU-accelerated document QA sy
   - High-speed PyMuPDF text normalization and table extraction
   - Persistent disk caching with SHA-256 validation
   - Incremental re-indexing
+  - Optional OCR fallback via Tesseract CLI
 
 - **Production-Grade Faithfulness**
   - Citation verification against retrieved passages
@@ -52,7 +53,7 @@ The Enterprise RAG Engine provides a fully local, GPU-accelerated document QA sy
 
 ```mermaid
 flowchart TD
-    PDF["docs/*.pdf"] -->|PyMuPDF Text & Tables| Ingest["indexing/parser.py"]
+    PDF["docs/*.pdf"] -->|PyMuPDF Text & Tables| Ingest["src/indexing/parser.py"]
     Ingest -->|Chunks & Markdown Tables| Cache[".rag_cache (FAISS + BM25)"]
 
     UserQuery["User Question"] -->|Hybrid Query| RRF["Stage 1: Hybrid Search (FAISS + BM25 RRF)"]
@@ -77,11 +78,12 @@ flowchart TD
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/` | Web-based chat interface |
-| `POST` | `/ask` | RAG question-answering with formatted HTML and citations |
+| `POST` | `/ask` | RAG question-answering with citations |
 | `POST` | `/api/chat` | JSON & SSE streaming endpoint (`stream: true`) |
 | `GET` | `/api/documents` | List indexed PDFs, file sizes, and chunk statistics |
 | `POST` | `/api/reindex` | Trigger fresh re-indexing of all documents |
-| `GET` | `/api/status` | System health, active LLM model, device, and chunk count |
+| `GET` | `/api/status` | System health, active model, device, and chunk count |
+| `GET` | `/api/health` | Alias for `/api/status` |
 
 ---
 
@@ -99,7 +101,7 @@ bhel_internship/              # Repository root
 │   │   ├── logger.py         # Rich colorized structured logging
 │   │   └── exceptions.py     # Shared domain exceptions
 │   ├── engine/               # RAG orchestration
-│   │   ├── pipeline.py       # RAG orchestration + singleton accessor
+│   │   ├── pipeline.py       # RAG pipeline + singleton accessor
 │   │   └── grounding.py      # Citation verification + refusal detection
 │   ├── indexing/             # Document processing
 │   │   ├── parser.py         # PDF text/table extraction, headings, OCR fallback
@@ -184,24 +186,79 @@ response = httpx.post(
 )
 ```
 
+**Streaming:**
+```python
+import httpx, json
+
+with httpx.stream("POST", "http://localhost:5000/api/chat",
+                  json={"question": "Summarize the document", "stream": True}) as r:
+    for line in r.iter_lines():
+        if line.startswith("data:") and "[DONE]" not in line:
+            print(json.loads(line[5:]))
+```
+
+**Terminal Chat:**
+```bash
+python -m src                          # interactive chat
+python -m src eval goldens.json       # run evaluation harness
+```
+
 ---
 
 ## Configuration
 
-Settings are customized via environment variables or a `.env` file:
+All settings can be overridden via environment variables or a `.env` file at the repo root. Copy `.env.example` to `.env` and edit as needed.
+
+### Server
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Server host address |
+| `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `5000` | Server port |
-| `CHUNK_SIZE` | `650` | Character/token chunk length |
+| `DEBUG` | `false` | Enable uvicorn auto-reload |
+| `LOG_LEVEL` | `INFO` | Logging verbosity |
+
+### Retrieval Tuning
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CHUNK_SIZE` | `650` | Character chunk length |
 | `CHUNK_OVERLAP` | `120` | Overlap between chunks |
 | `TOP_K_CANDIDATES` | `20` | Candidate chunks from stage-1 hybrid search |
 | `TOP_N_RERANK` | `5` | Passages selected after neural reranking |
-| `DENSE_WEIGHT` | `0.6` | Weight of dense retrieval in RRF |
+| `RRF_K` | `60` | RRF rank constant |
+| `DENSE_WEIGHT` | `0.6` | Weight of dense (FAISS) retrieval in RRF |
 | `BM25_WEIGHT` | `0.4` | Weight of BM25 in RRF |
+| `RERANK_FUSION_ALPHA` | `0.85` | Cross-encoder vs RRF blend (1.0 = cross-encoder only) |
+| `MMR_ENABLED` | `true` | Enable Maximal Marginal Relevance diversification |
+| `MMR_LAMBDA` | `0.5` | MMR relevance/diversity trade-off (1.0 = pure relevance) |
+| `USE_RERANKER` | `true` | Enable neural cross-encoder reranker |
+| `RERANKER_MODEL_NAME` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Reranker model |
+
+### Faithfulness
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENABLE_ABSTENTION` | `true` | Abstain when evidence score is too low |
+| `ABSTAIN_MIN_SCORE` | `-10.0` | Minimum cross-encoder logit to attempt an answer |
+| `ENABLE_CORRECTIVE_RETRY` | `true` | Retry with a stricter prompt on ungrounded citations |
+
+### Ingestion & OCR
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENABLE_OCR` | `true` | OCR fallback via Tesseract CLI for image-only pages |
+| `OCR_DPI` | `300` | DPI for OCR rasterization |
+| `OCR_MIN_CHARS` | `50` | Min characters extracted before OCR is triggered |
+
+### LLM
+
+| Variable | Default | Description |
+|----------|---------|-------------|
 | `LLM_PROVIDER` | `auto` | Provider: `auto`, `ollama`, or `llamacpp` |
-| `OLLAMA_MODEL` | `qwen2.5:7b` | Target Ollama model name |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Ollama model name |
+| `GGUF_MODEL_PATH` | `models/tinyllama-1.1b-chat-v1.0.Q5_K_M.gguf` | Path to GGUF model file |
 
 ---
 
