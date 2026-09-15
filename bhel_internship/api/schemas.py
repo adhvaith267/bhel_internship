@@ -9,8 +9,12 @@ from pydantic import BaseModel, Field
 
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, description="The user question to answer")
-    top_n: Optional[int] = Field(default=5, ge=1, le=20, description="Number of context chunks to use")
-    doc_name: Optional[str] = Field(default=None, description="Optional document name to filter context by")
+    top_n: Optional[int] = Field(
+        default=5, ge=1, le=20, description="Number of context chunks to use"
+    )
+    doc_name: Optional[str] = Field(
+        default=None, description="Optional document name to filter context by"
+    )
 
 
 class ChatRequest(BaseModel):

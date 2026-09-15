@@ -1,10 +1,9 @@
 from typing import List
 from bhel_internship.core.config import CHUNK_SIZE, CHUNK_OVERLAP
 
+
 def split_text_recursive(
-    text: str,
-    chunk_size: int = CHUNK_SIZE,
-    chunk_overlap: int = CHUNK_OVERLAP
+    text: str, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP
 ) -> List[str]:
     """Splits text recursively based on paragraph, sentence, and word boundaries."""
     if len(text) <= chunk_size:

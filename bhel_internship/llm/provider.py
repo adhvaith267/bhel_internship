@@ -3,12 +3,7 @@ import time
 from typing import Generator, Optional
 import httpx
 
-from bhel_internship.core.config import (
-    LLM_PROVIDER,
-    OLLAMA_BASE_URL,
-    OLLAMA_MODEL,
-    GGUF_MODEL_PATH
-)
+from bhel_internship.core.config import LLM_PROVIDER, OLLAMA_BASE_URL, OLLAMA_MODEL, GGUF_MODEL_PATH
 from bhel_internship.core.logger import logger
 
 
@@ -42,29 +37,36 @@ class LLMEngine:
             if self._is_ollama_available():
                 self.provider = "ollama"
                 self.active_model_name = f"Ollama ({OLLAMA_MODEL})"
-                logger.info(f"[bold green]✓ Using Ollama provider with model: {OLLAMA_MODEL}[/bold green]")
+                logger.info(
+                    f"[bold green]✓ Using Ollama provider with model: {OLLAMA_MODEL}[/bold green]"
+                )
             else:
                 self.provider = "llamacpp"
                 self.active_model_name = f"llama.cpp ({GGUF_MODEL_PATH.name})"
-                logger.info(f"[bold yellow]Ollama not available. Falling back to llama.cpp: {GGUF_MODEL_PATH.name}[/bold yellow]")
+                logger.info(
+                    f"[bold yellow]Ollama not available. Falling back to llama.cpp: {GGUF_MODEL_PATH.name}[/bold yellow]"
+                )
         elif self.provider == "ollama":
             self.active_model_name = f"Ollama ({OLLAMA_MODEL})"
             logger.info(f"[bold green]Using Ollama provider: {OLLAMA_MODEL}[/bold green]")
         else:
             self.provider = "llamacpp"
             self.active_model_name = f"llama.cpp ({GGUF_MODEL_PATH.name})"
-            logger.info(f"[bold green]Using llama.cpp provider: {GGUF_MODEL_PATH.name}[/bold green]")
+            logger.info(
+                f"[bold green]Using llama.cpp provider: {GGUF_MODEL_PATH.name}[/bold green]"
+            )
 
     def _get_llamacpp(self):
         if self._llamacpp_instance is None:
             from llama_cpp import Llama
+
             logger.info(f"Loading GGUF model into memory: {GGUF_MODEL_PATH}")
             self._llamacpp_instance = Llama(
                 model_path=str(GGUF_MODEL_PATH),
                 n_gpu_layers=20,
                 n_threads=6,
                 n_ctx=4096,
-                verbose=False
+                verbose=False,
             )
         return self._llamacpp_instance
 
@@ -73,21 +75,18 @@ class LLMEngine:
         prompt: str,
         system_prompt: Optional[str] = None,
         max_tokens: int = 600,
-        temperature: float = 0.2
+        temperature: float = 0.2,
     ) -> str:
         """Synchronously generates a completed text answer."""
         t0 = time.time()
-        
+
         if self.provider == "ollama":
             payload = {
                 "model": OLLAMA_MODEL,
                 "prompt": prompt,
                 "system": system_prompt or "",
                 "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens
-                }
+                "options": {"temperature": temperature, "num_predict": max_tokens},
             }
             try:
                 with httpx.Client(timeout=60.0) as client:
@@ -118,10 +117,10 @@ class LLMEngine:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=0.9,
-                stop=_default_stop_sequences()
+                stop=_default_stop_sequences(),
             )
             text = res["choices"][0]["text"].strip()
-            logger.info(f"[RAG.LLM] llama.cpp generation finished in {time.time()-t0:.2f}s")
+            logger.info(f"[RAG.LLM] llama.cpp generation finished in {time.time() - t0:.2f}s")
             return text
         except Exception as e:
             logger.error(f"llama.cpp generation error: {e}")
@@ -132,7 +131,7 @@ class LLMEngine:
         prompt: str,
         system_prompt: Optional[str] = None,
         max_tokens: int = 600,
-        temperature: float = 0.2
+        temperature: float = 0.2,
     ) -> Generator[str, None, None]:
         """Streams generation chunks token-by-token."""
         if self.provider == "ollama":
@@ -141,14 +140,13 @@ class LLMEngine:
                 "prompt": prompt,
                 "system": system_prompt or "",
                 "stream": True,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens
-                }
+                "options": {"temperature": temperature, "num_predict": max_tokens},
             }
             try:
                 with httpx.Client(timeout=60.0) as client:
-                    with client.stream("POST", f"{OLLAMA_BASE_URL}/api/generate", json=payload) as response:
+                    with client.stream(
+                        "POST", f"{OLLAMA_BASE_URL}/api/generate", json=payload
+                    ) as response:
                         for line in response.iter_lines():
                             if not line:
                                 continue
@@ -166,7 +164,7 @@ class LLMEngine:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 stream=True,
-                stop=_default_stop_sequences()
+                stop=_default_stop_sequences(),
             ):
                 text_chunk = token_data["choices"][0]["text"]
                 yield text_chunk

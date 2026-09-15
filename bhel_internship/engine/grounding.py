@@ -31,8 +31,7 @@ _REFUSAL_PHRASES = (
 )
 
 ABSTENTION_MESSAGE = (
-    "The retrieved passages do not provide sufficient grounded evidence "
-    "to answer this question."
+    "The retrieved passages do not provide sufficient grounded evidence to answer this question."
 )
 
 
@@ -51,9 +50,7 @@ def build_clarification(chunks: List[Dict[str, Any]]) -> str:
     sections = [
         section
         for section, _ in Counter(
-            str(c.get("section", "")).strip()
-            for c in chunks
-            if str(c.get("section", "")).strip()
+            str(c.get("section", "")).strip() for c in chunks if str(c.get("section", "")).strip()
         ).most_common(2)
     ]
     if sections:
@@ -62,10 +59,8 @@ def build_clarification(chunks: List[Dict[str, Any]]) -> str:
             f"I can only answer questions about your indexed documents "
             f"\u2014 currently: {doc_part}. Try asking about {topics}."
         )
-    return (
-        f"I can only answer questions about your indexed documents "
-        f"\u2014 currently: {doc_part}."
-    )
+    return f"I can only answer questions about your indexed documents \u2014 currently: {doc_part}."
+
 
 def _normalize_doc(name: str) -> str:
     """Normalize a document name for comparison (case/extension tolerant)."""
@@ -89,9 +84,7 @@ def parse_citations(answer: str) -> List[Dict[str, Any]]:
     return found
 
 
-def verify_citations(
-    answer: str, chunks: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+def verify_citations(answer: str, chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Check every cited (document, page) pair against retrieved chunks.
 
     Returns a grounding report with ``cited_count``, ``verified_count``,
@@ -100,10 +93,10 @@ def verify_citations(
     """
     citations = parse_citations(answer)
     evidence = {
-        (_normalize_doc(str(chk.get("doc_name", ""))), int(chk.get("page", -1)))
-        for chk in chunks
+        (_normalize_doc(str(chk.get("doc_name", ""))), int(chk.get("page", -1))) for chk in chunks
     }
-    verified, unverified = [], []
+    verified: list[dict[str, int]] = []
+    unverified: list[dict[str, int]] = []
     for cite in citations:
         key = (_normalize_doc(cite["document"]), cite["page"])
         (verified if key in evidence else unverified).append(

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from bhel_internship.api.deps import get_engine
-from bhel_internship.api.schemas import AskRequest, AskResponse, ChatRequest
+from bhel_internship.api.schemas import AskRequest, ChatRequest
 from bhel_internship.core.config import settings
 from bhel_internship.core.logger import logger
 from bhel_internship.engine.pipeline import EnterpriseRAGEngine
@@ -141,6 +141,15 @@ def create_app() -> FastAPI:
             "time_taken_seconds": round(time.time() - t0, 2),
         }
 
+        t0 = time.time()
+        engine.reindex()
+        return {
+            "status": "success",
+            "message": f"Successfully reindexed {len(engine.retriever.chunks)} chunks.",
+            "chunks_count": len(engine.retriever.chunks),
+            "time_taken_seconds": round(time.time() - t0, 2),
+        }
+
     @application.get("/api/status")
     @application.get("/api/health")
     async def health_check(engine: EnterpriseRAGEngine = Depends(get_engine)):
@@ -153,8 +162,6 @@ def create_app() -> FastAPI:
             "retriever_device": engine.retriever.device,
             "reranker_active": engine.retriever.reranker is not None,
         }
-
-    return application
 
 
 # Default application instance for `uvicorn main:app` / `uvicorn bhel_internship.api.routes:app`.

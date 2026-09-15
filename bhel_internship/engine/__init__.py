@@ -4,11 +4,7 @@ from bhel_internship.engine.grounding import (
     parse_citations,
     verify_citations,
 )
-from bhel_internship.engine.pipeline import (
-    EnterpriseRAGEngine,
-    get_rag_engine,
-    format_context
-)
+from bhel_internship.engine.pipeline import EnterpriseRAGEngine, get_rag_engine, format_context
 
 __all__ = [
     "EnterpriseRAGEngine",

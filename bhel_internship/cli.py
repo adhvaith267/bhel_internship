@@ -37,7 +37,12 @@ def render_answer(res: dict) -> None:
     console.print(Markdown(res["response"]))
 
     if res.get("sources"):
-        table = Table(title="Referenced Sources", border_style="dim", show_header=True, header_style="bold cyan")
+        table = Table(
+            title="Referenced Sources",
+            border_style="dim",
+            show_header=True,
+            header_style="bold cyan",
+        )
         table.add_column("#", justify="right", style="dim", width=4)
         table.add_column("Document", style="cyan")
         table.add_column("Page", justify="center", style="yellow")
@@ -50,7 +55,9 @@ def render_answer(res: dict) -> None:
 
 
 def run_interactive(engine, top_n: int = 4) -> None:
-    console.print("[dim]Type your question and press Enter. Enter 'exit' or 'quit' to exit.[/dim]\n")
+    console.print(
+        "[dim]Type your question and press Enter. Enter 'exit' or 'quit' to exit.[/dim]\n"
+    )
     while True:
         try:
             question = console.input("[bold blue]You:[/bold blue] ").strip()
@@ -75,7 +82,9 @@ def run_interactive(engine, top_n: int = 4) -> None:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Enterprise RAG Engine terminal chat")
     parser.add_argument("-q", "--question", default=None, help="Ask a single question and exit")
-    parser.add_argument("--top-n", type=int, default=4, help="Retrieved passages to use (default: 4)")
+    parser.add_argument(
+        "--top-n", type=int, default=4, help="Retrieved passages to use (default: 4)"
+    )
     parser.add_argument("--doc", default=None, help="Restrict context to a single document name")
     parser.add_argument("--reindex", action="store_true", help="Rebuild the index before querying")
     return parser.parse_args(argv)

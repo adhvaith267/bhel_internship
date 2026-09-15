@@ -41,7 +41,9 @@ def load_goldens(path: str | Path) -> List[Dict[str, Any]]:
     return cases
 
 
-def evaluate_case(engine: Any, case: Dict[str, Any], keyword_threshold: float = 0.5) -> Dict[str, Any]:
+def evaluate_case(
+    engine: Any, case: Dict[str, Any], keyword_threshold: float = 0.5
+) -> Dict[str, Any]:
     """Runs one golden case through the full pipeline and scores it."""
     question = case["question"]
     top_n = int(case.get("top_n", 5))
@@ -98,7 +100,9 @@ def run_eval(
         "passed": sum(1 for c in cases if c["passed"]),
         "pass_rate": round(sum(1 for c in cases if c["passed"]) / n, 3) if n else 0.0,
         "context_hit_rate": round(sum(1 for c in cases if c["context_hit"]) / n, 3) if n else 0.0,
-        "mean_keyword_coverage": round(sum(c["keyword_coverage"] for c in cases) / n, 3) if n else 0.0,
+        "mean_keyword_coverage": round(sum(c["keyword_coverage"] for c in cases) / n, 3)
+        if n
+        else 0.0,
         "mean_grounding_rate": round(sum(c["grounding_rate"] for c in cases) / n, 3) if n else 0.0,
         "abstentions": sum(1 for c in cases if c["abstained"]),
     }

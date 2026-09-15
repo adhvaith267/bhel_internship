@@ -17,5 +17,5 @@ __all__ = [
     "extract_pdf_documents",
     "get_all_pdf_paths",
     "ocr_page",
-    "split_text_recursive"
+    "split_text_recursive",
 ]

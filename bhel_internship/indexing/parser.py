@@ -19,6 +19,7 @@ from bhel_internship.core.config import (
 from bhel_internship.core.logger import logger
 from bhel_internship.indexing.chunker import split_text_recursive
 
+
 def compute_file_hash(filepath: Path) -> str:
     """Computes SHA-256 hash of a file to check for changes."""
     hasher = hashlib.sha256()
@@ -26,6 +27,7 @@ def compute_file_hash(filepath: Path) -> str:
         while chunk := f.read(65536):
             hasher.update(chunk)
     return hasher.hexdigest()
+
 
 def clean_text(text: str) -> str:
     """Normalizes excessive whitespace and clean line breaks while preserving paragraphs."""
@@ -35,6 +37,7 @@ def clean_text(text: str) -> str:
     cleaned = "\n".join(lines)
     return re.sub(r"\n{3,}", "\n\n", cleaned).strip()
 
+
 def table_to_markdown(table_data: List[List[Any]]) -> str:
     """Converts raw table cell grid into a clean Markdown table format."""
     if not table_data or len(table_data) < 2:
@@ -42,7 +45,9 @@ def table_to_markdown(table_data: List[List[Any]]) -> str:
 
     rows = []
     for row in table_data:
-        cleaned_row = [str(cell).replace("\n", " ").strip() if cell is not None else "" for cell in row]
+        cleaned_row = [
+            str(cell).replace("\n", " ").strip() if cell is not None else "" for cell in row
+        ]
         if any(cleaned_row):
             rows.append(cleaned_row)
 
@@ -62,10 +67,14 @@ def table_to_markdown(table_data: List[List[Any]]) -> str:
 
     body_lines = []
     for row in rows[1:]:
-        padded = [row[i].ljust(col_widths[i]) if i < len(row) else "".ljust(col_widths[i]) for i in range(num_cols)]
+        padded = [
+            row[i].ljust(col_widths[i]) if i < len(row) else "".ljust(col_widths[i])
+            for i in range(num_cols)
+        ]
         body_lines.append("| " + " | ".join(padded) + " |")
 
     return "\n".join([header_str, separator_str] + body_lines)
+
 
 def detect_headings(page: "fitz.Page") -> List[str]:
     """Detects section headings via font-size analysis (no ML needed).
@@ -200,45 +209,54 @@ def extract_pdf_documents(pdf_path: Path) -> Tuple[List[Dict[str, Any]], str]:
 
         for chk in text_chunks:
             chunk_counter += 1
-            all_chunks.append({
-                "chunk_id": f"{pdf_path.stem}_p{page_num}_c{chunk_counter}",
-                "doc_name": doc_name,
-                "page": page_num,
-                "content": chk,
-                "parent_context": combined_parent,
-                "section": current_section,
-                "ocr": ocr_used,
-                "is_table": False
-            })
+            all_chunks.append(
+                {
+                    "chunk_id": f"{pdf_path.stem}_p{page_num}_c{chunk_counter}",
+                    "doc_name": doc_name,
+                    "page": page_num,
+                    "content": chk,
+                    "parent_context": combined_parent,
+                    "section": current_section,
+                    "ocr": ocr_used,
+                    "is_table": False,
+                }
+            )
 
         # Add each table as an individual chunk with high semantic weight
         for t_idx, md_table in enumerate(tables_markdown):
             chunk_counter += 1
             table_summary = f"[Table from Page {page_num} of {doc_name}]\n{md_table}"
-            all_chunks.append({
-                "chunk_id": f"{pdf_path.stem}_p{page_num}_t{t_idx+1}",
-                "doc_name": doc_name,
-                "page": page_num,
-                "content": table_summary,
-                "parent_context": combined_parent,
-                "section": current_section,
-                "ocr": ocr_used,
-                "is_table": True
-            })
+            all_chunks.append(
+                {
+                    "chunk_id": f"{pdf_path.stem}_p{page_num}_t{t_idx + 1}",
+                    "doc_name": doc_name,
+                    "page": page_num,
+                    "content": table_summary,
+                    "parent_context": combined_parent,
+                    "section": current_section,
+                    "ocr": ocr_used,
+                    "is_table": True,
+                }
+            )
 
     doc.close()
 
     if ocr_pages:
         logger.info(f"OCR recovered text on {doc_name} pages: {ocr_pages}")
     if blind_pages:
-        hint = "" if (not ENABLE_OCR or _tesseract_available()) else " (enable OCR: install tesseract)"
+        hint = (
+            "" if (not ENABLE_OCR or _tesseract_available()) else " (enable OCR: install tesseract)"
+        )
         logger.warning(
             f"{doc_name} has {len(blind_pages)} page(s) with no extractable text: "
             f"{blind_pages}{hint}. These pages are invisible to retrieval."
         )
 
-    logger.info(f"Extracted [bold green]{len(all_chunks)} chunks[/bold green] across {total_pages} pages from {doc_name}")
+    logger.info(
+        f"Extracted [bold green]{len(all_chunks)} chunks[/bold green] across {total_pages} pages from {doc_name}"
+    )
     return all_chunks, file_hash
+
 
 def get_all_pdf_paths() -> List[Path]:
     """Returns sorted list of all PDF file paths in DOCS_DIR."""

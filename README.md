@@ -234,11 +234,14 @@ curl -X POST http://localhost:5000/api/reindex
 ```python
 import httpx
 
-resp = httpx.post("http://localhost:5000/ask", json={
-    "question": "What is the minimum passing grade for CS201?",
-    "top_n": 5,
-    "doc_name": "Curriculum_Syllabi_CSE_2026.pdf"
-}).json()
+resp = httpx.post(
+    "http://localhost:5000/ask",
+    json={
+        "question": "What is the minimum passing grade for CS201?",
+        "top_n": 5,
+        "doc_name": "Curriculum_Syllabi_CSE_2026.pdf",
+    },
+).json()
 
 # resp["response"] — HTML formatted
 # resp["raw_text"] — plain text for tickets

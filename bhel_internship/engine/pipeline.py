@@ -3,7 +3,11 @@ from typing import Dict, Any, List, Optional, Generator
 from bhel_internship.retrieval.hybrid import HybridRAGRetriever
 from bhel_internship.llm.provider import LLMEngine
 from bhel_internship.llm.prompts import SYSTEM_PROMPT
-from bhel_internship.core.config import ENABLE_ABSTENTION, ABSTAIN_MIN_SCORE, ENABLE_CORRECTIVE_RETRY
+from bhel_internship.core.config import (
+    ENABLE_ABSTENTION,
+    ABSTAIN_MIN_SCORE,
+    ENABLE_CORRECTIVE_RETRY,
+)
 from bhel_internship.core.logger import logger
 from bhel_internship.engine.grounding import (
     ABSTENTION_MESSAGE,
@@ -22,6 +26,7 @@ STRICT_RETRY_ADDENDUM = (
     "The provided documents do not contain information to answer this question."
 )
 
+
 def format_context(chunks: List[Dict[str, Any]], expand_context: bool = True) -> str:
     """Formats retrieved chunks into clean, labeled context blocks for the LLM."""
     context_blocks = []
@@ -31,7 +36,7 @@ def format_context(chunks: List[Dict[str, Any]], expand_context: bool = True) ->
         doc = chk.get("doc_name", "Document")
         page = chk.get("page", 1)
         score = chk.get("relevance_score", 0.0)
-        
+
         # Use parent_context if available and not already shown for this page
         page_key = (doc, page)
         if expand_context and page_key not in seen_pages and chk.get("parent_context"):
@@ -44,6 +49,7 @@ def format_context(chunks: List[Dict[str, Any]], expand_context: bool = True) ->
         context_blocks.append(block)
 
     return "\n\n".join(context_blocks)
+
 
 class EnterpriseRAGEngine:
     def __init__(self):
@@ -96,7 +102,9 @@ class EnterpriseRAGEngine:
         return best < ABSTAIN_MIN_SCORE
 
     @staticmethod
-    def _build_sources(chunks: List[Dict[str, Any]], snippet_len: int = 260) -> List[Dict[str, Any]]:
+    def _build_sources(
+        chunks: List[Dict[str, Any]], snippet_len: int = 260
+    ) -> List[Dict[str, Any]]:
         return [
             {
                 "document": chk.get("doc_name"),
@@ -114,7 +122,7 @@ class EnterpriseRAGEngine:
         top_n: int = 5,
         expand_context: bool = True,
         temperature: float = 0.2,
-        doc_name: Optional[str] = None
+        doc_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         End-to-end RAG pipeline:
@@ -196,9 +204,7 @@ Cite every factual claim using [DocumentName, Page X] format exactly as shown in
 
         # 5. Generate answer
         answer = self.llm.generate(
-            prompt=user_prompt,
-            system_prompt=SYSTEM_PROMPT,
-            temperature=temperature
+            prompt=user_prompt, system_prompt=SYSTEM_PROMPT, temperature=temperature
         )
 
         # Model-side refusal: respect it, nothing to verify or retry.
@@ -239,7 +245,9 @@ Cite every factual claim using [DocumentName, Page X] format exactly as shown in
         """Builds the standard query result dict with grounding metadata."""
         sources = self._build_sources(chunks)
         latency = round((time.time() - t_start) * 1000, 1)
-        logger.info(f"[RAG.Pipeline] Generated response in {latency}ms ({len(sources)} sources cited)")
+        logger.info(
+            f"[RAG.Pipeline] Generated response in {latency}ms ({len(sources)} sources cited)"
+        )
         return {
             "response": answer,
             "sources": sources,
@@ -254,7 +262,7 @@ Cite every factual claim using [DocumentName, Page X] format exactly as shown in
         question: str,
         top_n: int = 5,
         expand_context: bool = True,
-        doc_name: Optional[str] = None
+        doc_name: Optional[str] = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """Streams generation chunks token-by-token along with citations.
 
@@ -267,7 +275,10 @@ Cite every factual claim using [DocumentName, Page X] format exactly as shown in
 
         if not self._query_is_specific(question):
             yield {"type": "sources", "data": []}
-            yield {"type": "token", "data": build_clarification(getattr(self.retriever, "chunks", []))}
+            yield {
+                "type": "token",
+                "data": build_clarification(getattr(self.retriever, "chunks", [])),
+            }
             return
 
         chunks = self.retriever.retrieve(question, top_n=top_n, doc_name=doc_name)
@@ -303,6 +314,7 @@ Cite every factual claim using [DocumentName, Page X] format exactly as shown in
 
 # Global singleton
 _engine_instance: Optional[EnterpriseRAGEngine] = None
+
 
 def get_rag_engine() -> EnterpriseRAGEngine:
     global _engine_instance

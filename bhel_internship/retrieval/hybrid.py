@@ -25,8 +25,13 @@ from bhel_internship.core.config import (
     MMR_ENABLED,
     MMR_LAMBDA,
 )
-from bhel_internship.indexing.parser import extract_pdf_documents, get_all_pdf_paths, compute_file_hash
+from bhel_internship.indexing.parser import (
+    extract_pdf_documents,
+    get_all_pdf_paths,
+    compute_file_hash,
+)
 from bhel_internship.core.logger import logger
+
 
 def tokenize_bm25(text: str) -> List[str]:
     """Lowercase alphanumeric tokens.
@@ -142,26 +147,31 @@ def _compute_term_df(chunks: List[Dict[str, Any]]) -> Dict[str, int]:
             df[token] = df.get(token, 0) + 1
     return df
 
+
 class HybridRAGRetriever:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Retriever computing device: [bold yellow]{self.device}[/bold yellow]")
-        
+
         # Load embedding model
         logger.info(f"Loading embedding model: [cyan]{EMBEDDING_MODEL_NAME}[/cyan]")
         self.embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=self.device)
         self.embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
-        
+
         # Load cross-encoder reranker if enabled
         self.reranker: Optional[CrossEncoder] = None
         if USE_RERANKER:
             try:
                 logger.info(f"Loading cross-encoder reranker: [cyan]{RERANKER_MODEL_NAME}[/cyan]")
-                self.reranker = CrossEncoder(RERANKER_MODEL_NAME, device=self.device, max_length=512)
+                self.reranker = CrossEncoder(
+                    RERANKER_MODEL_NAME, device=self.device, max_length=512
+                )
             except Exception as e:
-                logger.warning(f"Failed to load CrossEncoder ({e}). Falling back to pure RRF hybrid retrieval.")
+                logger.warning(
+                    f"Failed to load CrossEncoder ({e}). Falling back to pure RRF hybrid retrieval."
+                )
                 self.reranker = None
-                
+
         self.chunks: List[Dict[str, Any]] = []
         self.faiss_index: Optional[faiss.Index] = None
         self.bm25: Optional[BM25Okapi] = None
@@ -175,7 +185,7 @@ class HybridRAGRetriever:
             "bm25": CACHE_DIR / "bm25.pkl",
             "chunks": CACHE_DIR / "chunks.json",
             "manifest": CACHE_DIR / "manifest.json",
-            "embeddings": CACHE_DIR / "embeddings.npy"
+            "embeddings": CACHE_DIR / "embeddings.npy",
         }
 
     def _is_cache_valid(self, pdf_paths: List[Path]) -> bool:
@@ -221,7 +231,9 @@ class HybridRAGRetriever:
 
             self.term_df = _compute_term_df(self.chunks)
 
-            logger.info(f"[bold green]✓ Loaded {len(self.chunks)} chunks from cache in {time.time()-t0:.2f}s[/bold green]")
+            logger.info(
+                f"[bold green]✓ Loaded {len(self.chunks)} chunks from cache in {time.time() - t0:.2f}s[/bold green]"
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to load cache: {e}. Reindexing required.")
@@ -249,7 +261,7 @@ class HybridRAGRetriever:
                 "embedding_model": EMBEDDING_MODEL_NAME,
                 "file_hashes": file_hashes,
                 "num_chunks": len(self.chunks),
-                "created_at": time.time()
+                "created_at": time.time(),
             }
             with open(paths["manifest"], "w", encoding="utf-8") as f:
                 json.dump(manifest, f, indent=2)
@@ -324,10 +336,7 @@ class HybridRAGRetriever:
         fresh_paths: List[Path] = []
         for pdf_path in pdf_paths:
             name = pdf_path.name
-            if (
-                name in old_by_doc
-                and old_hashes.get(name) == current_hashes[name]
-            ):
+            if name in old_by_doc and old_hashes.get(name) == current_hashes[name]:
                 chunks, embs = old_by_doc[name]
                 reused_chunks.extend(chunks)
                 reused_embeddings.extend(embs)
@@ -363,9 +372,9 @@ class HybridRAGRetriever:
                     [c["content"] for c in fresh_chunks],
                     batch_size=64,
                     show_progress_bar=False,
-                    normalize_embeddings=True
+                    normalize_embeddings=True,
                 ),
-                dtype=np.float32
+                dtype=np.float32,
             )
         else:
             fresh_embeddings = np.zeros((0, self.embedding_dim), dtype=np.float32)
@@ -391,7 +400,9 @@ class HybridRAGRetriever:
         self.term_df = _compute_term_df(self.chunks)
 
         total_time = time.time() - t_start
-        logger.info(f"[bold green]✓ Indexing completed: {len(self.chunks)} chunks in {total_time:.2f}s[/bold green]")
+        logger.info(
+            f"[bold green]✓ Indexing completed: {len(self.chunks)} chunks in {total_time:.2f}s[/bold green]"
+        )
 
         # Persist cache
         self.save_cache(current_hashes, embeddings)
@@ -463,9 +474,7 @@ class HybridRAGRetriever:
         # top-k budget for the selected document.
         allowed_ids: Optional[set] = None
         if doc_name and doc_name.lower() != "all":
-            allowed_ids = {
-                i for i, c in enumerate(self.chunks) if c.get("doc_name") == doc_name
-            }
+            allowed_ids = {i for i, c in enumerate(self.chunks) if c.get("doc_name") == doc_name}
             if not allowed_ids:
                 logger.warning(f"No indexed chunks match document filter: {doc_name}")
                 return []
@@ -479,7 +488,11 @@ class HybridRAGRetriever:
 
         # --- Stage 1a: Dense Search (FAISS) ---
         # When filtering by document, search wider to ensure enough candidates survive the filter.
-        search_k = min(top_k * 4, len(self.chunks)) if allowed_ids is not None else min(top_k, len(self.chunks))
+        search_k = (
+            min(top_k * 4, len(self.chunks))
+            if allowed_ids is not None
+            else min(top_k, len(self.chunks))
+        )
         query_vector = self.embedding_model.encode([query], normalize_embeddings=True)
         _, dense_indices = self.faiss_index.search(
             np.array(query_vector, dtype=np.float32),
@@ -551,8 +564,9 @@ class HybridRAGRetriever:
             rrf_norm = _minmax_norm([rrf for _, rrf in candidates])
             order = sorted(
                 range(len(candidates)),
-                key=lambda i: rerank_alpha * float(cross_norm[i])
-                + (1.0 - rerank_alpha) * float(rrf_norm[i]),
+                key=lambda i: (
+                    rerank_alpha * float(cross_norm[i]) + (1.0 - rerank_alpha) * float(rrf_norm[i])
+                ),
                 reverse=True,
             )
             ordered = [(candidates[i][0], cross_scores[i]) for i in order]
