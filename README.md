@@ -5,51 +5,32 @@
 [![Ollama](https://img.shields.io/badge/Ollama-LLM-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com)
 [![FAISS](https://img.shields.io/badge/FAISS-Vector_Search-4285F4?style=for-the-badge&logo=meta&logoColor=white)](https://github.com/facebookresearch/faiss)
 
-**A high-performance, privacy-preserving Retrieval-Augmented Generation engine for enterprise document intelligence.**
-
-[Features](#key-features) · [Architecture](#architecture-overview) · [API](#api-endpoints) · [Setup](#quick-start) · [Configuration](#configuration)
+**A fully local, privacy-preserving Retrieval-Augmented Generation engine for enterprise document intelligence.**
 
 ---
 
 ## Overview
 
-The Enterprise RAG Engine provides a fully local, GPU-accelerated document QA system that retrieves grounded answers with exact page citations from indexed PDFs. No data ever leaves the machine. The only entry point is the web interface — no terminal chat, no CLI tools.
+The Enterprise RAG Engine lets you ask questions about your PDF documents and get grounded answers with exact page citations — entirely on your own machine. No data ever leaves the server. The only entry point is the web interface at `http://localhost:5000`.
+
+Drop your PDFs into `docs/`, start the server, and ask away.
 
 ---
 
 ## Key Features
 
-- **Two-Stage Hybrid Retrieval Pipeline**
-  - Dense semantic search via FAISS using `all-MiniLM-L6-v2`
-  - Sparse lexical search via BM25Okapi
-  - Reciprocal Rank Fusion (RRF) for balanced merging
-  - Multi-query expansion for technical document tokenization
-
-- **Neural Cross-Encoder Re-ranking**
-  - Re-ranks candidates using `cross-encoder/ms-marco-MiniLM-L-6-v2`
-  - Configurable alpha blending with RRF scores
-
-- **Maximal Marginal Relevance (MMR) Diversification**
-  - Reduces redundancy in retrieved passages
-
-- **Fully Local & Private**
-  - Runs via Ollama or llama.cpp GGUF models
-  - Zero data leaves the machine
-
-- **Native Document Ingestion**
-  - High-speed PyMuPDF text normalization and table extraction
-  - Persistent disk caching with SHA-256 validation
-  - Incremental re-indexing
-  - Optional OCR fallback via Tesseract CLI
-
-- **Production-Grade Faithfulness**
-  - Citation verification against retrieved passages
-  - Corrective retry on ungrounded claims
-  - Abstention gate for low-confidence queries
+- **Hybrid Retrieval** — Dense semantic search (FAISS) and sparse lexical search (BM25) combined via Reciprocal Rank Fusion, with multi-query expansion for technical terminology
+- **Neural Re-ranking** — Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) re-scores candidates for precision
+- **MMR Diversification** — Maximal Marginal Relevance removes redundant passages from the final context
+- **Grounded Answers** — Every claim is verified against retrieved passages; ungrounded citations trigger an automatic corrective retry
+- **Abstention** — The engine refuses to answer rather than hallucinate when evidence is too weak
+- **OCR Fallback** — Scanned/image-only PDF pages are automatically processed via Tesseract
+- **Incremental Indexing** — Only new or changed PDFs are re-embedded on restart; unchanged files are loaded from cache
+- **Fully Local & Private** — Runs via Ollama or a local GGUF file; no internet calls for inference
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -73,85 +54,78 @@ flowchart TD
 
 ---
 
-## API Endpoints
+## Technologies Used
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Web-based chat interface |
-| `POST` | `/ask` | RAG question-answering with citations |
-| `POST` | `/api/chat` | JSON & SSE streaming endpoint (`stream: true`) |
-| `GET` | `/api/documents` | List indexed PDFs, file sizes, and chunk statistics |
-| `POST` | `/api/reindex` | Trigger fresh re-indexing of all documents |
-| `GET` | `/api/status` | System health, active model, device, and chunk count |
-| `GET` | `/api/health` | Alias for `/api/status` |
+| Component | Technology |
+|-----------|-----------|
+| Web framework | FastAPI + Uvicorn |
+| Embedding model | `sentence-transformers/all-MiniLM-L6-v2` |
+| Vector search | FAISS (Facebook AI Similarity Search) |
+| Lexical search | BM25Okapi (`rank-bm25`) |
+| Re-ranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| PDF parsing | PyMuPDF (fitz) |
+| OCR | Tesseract CLI (optional) |
+| LLM inference | Ollama or llama-cpp-python (GGUF) |
+| Default LLM | `qwen2.5:7b` via Ollama |
 
 ---
 
 ## Project Structure
 
 ```
-bhel_internship/              # Repository root
-├── src/                      # Python package (all source code)
-│   ├── api/                  # FastAPI backend
-│   │   ├── routes.py         # FastAPI app factory + route definitions
-│   │   ├── schemas.py        # Pydantic request/response models
-│   │   └── deps.py           # Shared engine dependency
-│   ├── core/                 # Core engine components
-│   │   ├── config.py         # Settings + path & tuning constants
-│   │   ├── logger.py         # Rich colorized structured logging
-│   │   └── exceptions.py     # Shared domain exceptions
-│   ├── engine/               # RAG orchestration
-│   │   ├── pipeline.py       # RAG pipeline + singleton accessor
-│   │   └── grounding.py      # Citation verification + refusal detection
-│   ├── indexing/             # Document processing
-│   │   ├── parser.py         # PDF text/table extraction, headings, OCR fallback
-│   │   └── chunker.py        # Recursive text splitting with overlap
-│   ├── llm/                  # Language model integration
-│   │   ├── provider.py       # LLM connectors (Ollama & llama-cpp-python)
-│   │   └── prompts.py        # Grounded system prompt
-│   ├── retrieval/            # Hybrid retrieval
-│   │   └── hybrid.py         # FAISS + BM25 + RRF + cross-encoder reranker
-│   ├── ui/                   # Web UI
-│   │   └── templates/
-│   │       └── index.html    # ChatGPT-style interface
-│   ├── __init__.py
-│   └── __main__.py           # `python -m src` — starts the web server
-├── docs/                     # Drop PDFs here to index them
-├── models/                   # Place GGUF model files here
-├── .env.example              # Environment configuration template
-├── .gitignore
-└── requirements.txt          # Python dependencies
+bhel_internship/
+├── src/                    # All source code
+│   ├── api/                # FastAPI routes, schemas, dependencies
+│   ├── core/               # Config, logger, exceptions
+│   ├── engine/             # RAG pipeline and citation grounding
+│   ├── indexing/           # PDF parsing and text chunking
+│   ├── llm/                # Ollama and llama.cpp connectors
+│   ├── retrieval/          # Hybrid FAISS + BM25 + reranker
+│   └── ui/templates/       # Web interface (index.html)
+├── docs/                   # Place your PDF files here
+├── models/                 # Place GGUF model files here (optional)
+├── .env.example            # Configuration template
+└── requirements.txt
 ```
 
 ---
 
-## Quick Start
+## Setup
 
-### 1. Initial Setup (One-time)
+### 1. Install dependencies
 
 ```bash
-# Clone repository
 git clone https://github.com/adhvaith267/bhel_internship.git
 cd bhel_internship
-
-# Create virtual environment and install dependencies
 python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# venv\Scripts\activate   # Windows
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Install local model
-ollama pull qwen2.5:7b  # or set LLM_PROVIDER=llamacpp
 ```
 
-### 2. Add Documents
+### 2. Set up a language model
 
-Place PDF files in the `docs/` directory:
+**Option A — Ollama (recommended):**
 ```bash
-cp /path/to/documents/*.pdf docs/
+# Install Ollama from https://ollama.com, then:
+ollama pull qwen2.5:7b
 ```
 
-### 3. Start the Server
+**Option B — GGUF (fully offline, no Ollama needed):**
+Download any GGUF model and place it in `models/`. A good starting point:
+- [TinyLlama 1.1B Q5](https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF) — lightweight, fast
+- [Mistral 7B Q4](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) — better quality
+
+Then set in your `.env`:
+```
+LLM_PROVIDER=llamacpp
+GGUF_MODEL_PATH=models/your-model-file.gguf
+```
+
+### 3. Add your documents
+
+See the [docs/ and models/](#docs-and-models) section below.
+
+### 4. Start the server
 
 ```bash
 python -m src
@@ -159,99 +133,43 @@ python -m src
 
 Open `http://localhost:5000` in your browser.
 
-### 4. Using the Web Interface
-
-- Type questions in the chat box and press Enter
-- Filter context to a specific document using the dropdown
-- Citations are shown with page numbers and relevance scores
-- Use the streaming API for token-by-token responses
-
 ---
 
-## API Usage
+## docs/ and models/
 
-**Single question:**
-```python
-import httpx
+### docs/
+This is where you place the PDF files you want to query. The engine indexes everything in this folder on startup.
 
-response = httpx.post(
-    "http://localhost:5000/ask",
-    json={
-        "question": "What are the attendance requirements for theory courses?",
-        "top_n": 5,
-        "doc_name": "B.TechCSE-2026-27-Curriculum-Syllabi.pdf"
-    }
-)
-print(response.json())
-```
+- Supports any PDF — text-based, scanned, or mixed
+- Scanned pages are automatically OCR'd if Tesseract is installed
+- Tables are extracted and indexed separately as Markdown
+- Adding or replacing a PDF and restarting the server will re-index only the changed file — everything else is loaded from cache
+- You can also trigger re-indexing without restarting via the **Reindex** button in the web interface
 
-**Streaming:**
-```python
-import httpx, json
+### models/
+Only needed if you are using the `llamacpp` provider instead of Ollama. Place your `.gguf` model file here and point `GGUF_MODEL_PATH` to it in your `.env`.
 
-with httpx.stream("POST", "http://localhost:5000/api/chat",
-                  json={"question": "Summarize the document", "stream": True}) as r:
-    for line in r.iter_lines():
-        if line.startswith("data:") and "[DONE]" not in line:
-            print(json.loads(line[5:]))
-```
+Download GGUF models from [Hugging Face — TheBloke's collection](https://huggingface.co/TheBloke) (search for any model + "GGUF"). Quantized versions (`Q4_K_M`, `Q5_K_M`) offer the best size/quality tradeoff for local use.
+
+If you are using Ollama, this folder can stay empty.
 
 ---
 
 ## Configuration
 
-All settings can be overridden via environment variables or a `.env` file at the repo root. Copy `.env.example` to `.env` and edit as needed.
-
-### Server
+Copy `.env.example` to `.env` and edit as needed. Key variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `5000` | Server port |
-| `DEBUG` | `false` | Enable uvicorn auto-reload |
-| `LOG_LEVEL` | `INFO` | Logging verbosity |
+| `LLM_PROVIDER` | `auto` | `auto`, `ollama`, or `llamacpp` |
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Ollama model to use |
+| `GGUF_MODEL_PATH` | `models/tinyllama-...gguf` | Path to GGUF file |
+| `CHUNK_SIZE` | `650` | Characters per chunk |
+| `TOP_N_RERANK` | `5` | Passages sent to the LLM |
+| `ENABLE_OCR` | `true` | OCR fallback for scanned pages |
 
-### Retrieval Tuning
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CHUNK_SIZE` | `650` | Character chunk length |
-| `CHUNK_OVERLAP` | `120` | Overlap between chunks |
-| `TOP_K_CANDIDATES` | `20` | Candidate chunks from stage-1 hybrid search |
-| `TOP_N_RERANK` | `5` | Passages selected after neural reranking |
-| `RRF_K` | `60` | RRF rank constant |
-| `DENSE_WEIGHT` | `0.6` | Weight of dense (FAISS) retrieval in RRF |
-| `BM25_WEIGHT` | `0.4` | Weight of BM25 in RRF |
-| `RERANK_FUSION_ALPHA` | `0.85` | Cross-encoder vs RRF blend (1.0 = cross-encoder only) |
-| `MMR_ENABLED` | `true` | Enable Maximal Marginal Relevance diversification |
-| `MMR_LAMBDA` | `0.5` | MMR relevance/diversity trade-off (1.0 = pure relevance) |
-| `USE_RERANKER` | `true` | Enable neural cross-encoder reranker |
-| `RERANKER_MODEL_NAME` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Reranker model |
-
-### Faithfulness
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_ABSTENTION` | `true` | Abstain when evidence score is too low |
-| `ABSTAIN_MIN_SCORE` | `-10.0` | Minimum cross-encoder logit to attempt an answer |
-| `ENABLE_CORRECTIVE_RETRY` | `true` | Retry with a stricter prompt on ungrounded citations |
-
-### Ingestion & OCR
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_OCR` | `true` | OCR fallback via Tesseract CLI for image-only pages |
-| `OCR_DPI` | `300` | DPI for OCR rasterization |
-| `OCR_MIN_CHARS` | `50` | Min characters extracted before OCR is triggered |
-
-### LLM
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LLM_PROVIDER` | `auto` | Provider: `auto`, `ollama`, or `llamacpp` |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_MODEL` | `qwen2.5:7b` | Ollama model name |
-| `GGUF_MODEL_PATH` | `models/tinyllama-1.1b-chat-v1.0.Q5_K_M.gguf` | Path to GGUF model file |
+All other tuning variables (RRF weights, MMR settings, abstention thresholds) are documented in `.env.example`.
 
 ---
 
