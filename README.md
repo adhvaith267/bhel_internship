@@ -11,22 +11,23 @@
 
 ## Overview
 
-The Enterprise RAG Engine lets you ask questions about your PDF documents and get grounded answers with exact page citations — entirely on your own machine. No data ever leaves the server. The only entry point is the web interface at `http://localhost:5000`.
+Ask questions about your PDF documents and get grounded answers with exact page citations — entirely on your own machine. No data ever leaves the server.
 
-Drop your PDFs into `docs/`, start the server, and ask away.
+Drop your PDFs into `docs/`, start the server, and ask away at `http://localhost:5000`.
 
 ---
 
 ## Key Features
 
-- **Hybrid Retrieval** — Dense semantic search (FAISS) and sparse lexical search (BM25) combined via Reciprocal Rank Fusion, with multi-query expansion for technical terminology
-- **Neural Re-ranking** — Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) re-scores candidates for precision
+- **Hybrid Retrieval** — Dense semantic search (FAISS) + sparse lexical search (BM25) fused via Reciprocal Rank Fusion, with multi-query expansion for technical terminology
+- **Neural Re-ranking** — Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) re-scores candidates for precision; lazy-loaded on first query for fast startup
 - **MMR Diversification** — Maximal Marginal Relevance removes redundant passages from the final context
 - **Grounded Answers** — Every claim is verified against retrieved passages; ungrounded citations trigger an automatic corrective retry
 - **Abstention** — The engine refuses to answer rather than hallucinate when evidence is too weak
 - **OCR Fallback** — Scanned/image-only PDF pages are automatically processed via Tesseract
 - **Incremental Indexing** — Only new or changed PDFs are re-embedded on restart; unchanged files are loaded from cache
-- **Fully Local & Private** — Runs via Ollama or a local GGUF file; no internet calls for inference
+- **Streaming UI** — Token-by-token SSE streaming with a full chat history sidebar (localStorage)
+- **Fully Local & Private** — Runs via Ollama or a local GGUF file; zero internet calls for inference
 
 ---
 
@@ -44,7 +45,7 @@ flowchart TD
     MMR -->|Top-N Passages| Prompt["Grounded Prompt + Citations"]
 
     Prompt --> LLM["LLM Engine (Ollama / llama.cpp GGUF)"]
-    LLM --> Answer["Grounded Answer with Page Citations"]
+    LLM --> Answer["Answer with Page Citations"]
 
     Answer --> Verify["Citation Verification"]
     Verify -->|Ungrounded?| Retry["Corrective Retry (Strict Prompt)"]
@@ -54,16 +55,16 @@ flowchart TD
 
 ---
 
-## Technologies Used
+## Technologies
 
 | Component | Technology |
 |-----------|-----------|
 | Web framework | FastAPI + Uvicorn |
 | Embedding model | `sentence-transformers/all-MiniLM-L6-v2` |
-| Vector search | FAISS (Facebook AI Similarity Search) |
+| Vector search | FAISS |
 | Lexical search | BM25Okapi (`rank-bm25`) |
 | Re-ranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
-| PDF parsing | PyMuPDF (fitz) |
+| PDF parsing | PyMuPDF (`pymupdf`) |
 | OCR | Tesseract CLI (optional) |
 | LLM inference | Ollama or llama-cpp-python (GGUF) |
 | Default LLM | `qwen2.5:7b` via Ollama |
@@ -74,17 +75,19 @@ flowchart TD
 
 ```
 bhel_internship/
-├── src/                    # All source code
-│   ├── api/                # FastAPI routes, schemas, dependencies
-│   ├── core/               # Config, logger, exceptions
-│   ├── engine/             # RAG pipeline and citation grounding
-│   ├── indexing/           # PDF parsing and text chunking
-│   ├── llm/                # Ollama and llama.cpp connectors
-│   ├── retrieval/          # Hybrid FAISS + BM25 + reranker
-│   └── ui/templates/       # Web interface (index.html)
-├── docs/                   # Place your PDF files here
-├── models/                 # Place GGUF model files here (optional)
-├── .env.example            # Configuration template
+├── src/
+│   ├── api/            # FastAPI routes, schemas, dependencies
+│   ├── core/           # Config, logger, exceptions
+│   ├── engine/         # RAG pipeline and citation grounding
+│   ├── indexing/       # PDF parsing and text chunking
+│   ├── llm/            # Ollama and llama.cpp connectors
+│   ├── retrieval/      # Hybrid FAISS + BM25 + reranker
+│   └── ui/
+│       ├── static/js/  # Frontend JS (app.js, marked.min.js)
+│       └── templates/  # Jinja2 HTML template
+├── docs/               # Place your PDF files here
+├── models/             # Place GGUF model files here (optional)
+├── .env.example        # Configuration template
 └── requirements.txt
 ```
 
@@ -92,13 +95,13 @@ bhel_internship/
 
 ## Setup
 
-### 1. Install dependencies
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/adhvaith267/bhel_internship.git
 cd bhel_internship
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -110,20 +113,20 @@ pip install -r requirements.txt
 ollama pull qwen2.5:7b
 ```
 
-**Option B — GGUF (fully offline, no Ollama needed):**
-Download any GGUF model and place it in `models/`. A good starting point:
+**Option B — GGUF (fully offline):**
+Download any GGUF model and place it in `models/`. Good starting points:
 - [TinyLlama 1.1B Q5](https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF) — lightweight, fast
 - [Mistral 7B Q4](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) — better quality
 
-Then set in your `.env`:
+Set in `.env`:
 ```
 LLM_PROVIDER=llamacpp
 GGUF_MODEL_PATH=models/your-model-file.gguf
 ```
 
-### 3. Add your documents
+### 3. Add documents
 
-See the [docs/ and models/](#docs-and-models) section below.
+Place PDF files in `docs/`. The engine indexes all PDFs on startup.
 
 ### 4. Start the server
 
@@ -135,29 +138,18 @@ Open `http://localhost:5000` in your browser.
 
 ---
 
-## docs/ and models/
+## Usage
 
-### docs/
-This is where you place the PDF files you want to query. The engine indexes everything in this folder on startup.
-
-- Supports any PDF — text-based, scanned, or mixed
-- Scanned pages are automatically OCR'd if Tesseract is installed
-- Tables are extracted and indexed separately as Markdown
-- Adding or replacing a PDF and restarting the server will re-index only the changed file — everything else is loaded from cache
-- You can also trigger re-indexing without restarting via the **Reindex** button in the web interface
-
-### models/
-Only needed if you are using the `llamacpp` provider instead of Ollama. Place your `.gguf` model file here and point `GGUF_MODEL_PATH` to it in your `.env`.
-
-Download GGUF models from [Hugging Face — TheBloke's collection](https://huggingface.co/TheBloke) (search for any model + "GGUF"). Quantized versions (`Q4_K_M`, `Q5_K_M`) offer the best size/quality tradeoff for local use.
-
-If you are using Ollama, this folder can stay empty.
+- **Ask questions** — type in the chat box and press Enter (Shift+Enter for a new line)
+- **Filter by document** — use the dropdown in the top-right to restrict answers to one PDF
+- **Reindex** — add new PDFs to `docs/` and click the **Reindex** button (or restart the server)
+- **Chat history** — previous conversations are saved in the browser's localStorage; rename, pin, or delete them from the sidebar
 
 ---
 
 ## Configuration
 
-Copy `.env.example` to `.env` and edit as needed. Key variables:
+Copy `.env.example` to `.env` and edit as needed:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -169,8 +161,8 @@ Copy `.env.example` to `.env` and edit as needed. Key variables:
 | `TOP_N_RERANK` | `5` | Passages sent to the LLM |
 | `ENABLE_OCR` | `true` | OCR fallback for scanned pages |
 
-All other tuning variables (RRF weights, MMR settings, abstention thresholds) are documented in `.env.example`.
+All tuning variables (RRF weights, MMR settings, abstention thresholds) are documented in `.env.example`.
 
 ---
 
-*Built for Enterprise — Local. Private. Grounded.*
+*Local. Private. Grounded.*

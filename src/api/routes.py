@@ -141,15 +141,6 @@ def create_app() -> FastAPI:
             "time_taken_seconds": round(time.time() - t0, 2),
         }
 
-        t0 = time.time()
-        engine.reindex()
-        return {
-            "status": "success",
-            "message": f"Successfully reindexed {len(engine.retriever.chunks)} chunks.",
-            "chunks_count": len(engine.retriever.chunks),
-            "time_taken_seconds": round(time.time() - t0, 2),
-        }
-
     @application.get("/api/status")
     @application.get("/api/health")
     async def health_check(engine: EnterpriseRAGEngine = Depends(get_engine)):
@@ -162,6 +153,8 @@ def create_app() -> FastAPI:
             "retriever_device": engine.retriever.device,
             "reranker_active": engine.retriever.reranker is not None,
         }
+
+    return application
 
 
 # Default application instance for `uvicorn main:app` / `uvicorn src.api.routes:app`.

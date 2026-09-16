@@ -6,7 +6,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 
 from src.core.config import (
     CHUNK_SIZE,

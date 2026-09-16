@@ -43,13 +43,3 @@ class GroundingReport(BaseModel):
     grounding_rate: float = 1.0
     verified: List[UnverifiedCitation] = Field(default_factory=list)
     unverified: List[UnverifiedCitation] = Field(default_factory=list)
-
-
-class AskResponse(BaseModel):
-    response: str
-    raw_text: str
-    sources: List[SourceCitation]
-    latency_ms: float
-    model: str
-    abstained: bool = False
-    grounding: GroundingReport = Field(default_factory=GroundingReport)

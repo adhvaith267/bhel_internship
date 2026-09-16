@@ -6,10 +6,8 @@ import httpx
 from src.core.config import LLM_PROVIDER, OLLAMA_BASE_URL, OLLAMA_MODEL, GGUF_MODEL_PATH
 from src.core.logger import logger
 
-
-def _default_stop_sequences() -> list[str]:
-    """Default stop sequences that work across common chat templates."""
-    return ["\nHuman:", "\n\nHuman:", "\nUser:", "\n\nUser:", "[END]"]
+# Stop sequences that work across common chat templates.
+_STOP_SEQUENCES = ["\nHuman:", "\n\nHuman:", "\nUser:", "\n\nUser:", "[END]"]
 
 
 class LLMEngine:
@@ -117,7 +115,7 @@ class LLMEngine:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=0.9,
-                stop=_default_stop_sequences(),
+                stop=_STOP_SEQUENCES,
             )
             text = res["choices"][0]["text"].strip()
             logger.info(f"[RAG.LLM] llama.cpp generation finished in {time.time() - t0:.2f}s")
@@ -164,7 +162,7 @@ class LLMEngine:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 stream=True,
-                stop=_default_stop_sequences(),
+                stop=_STOP_SEQUENCES,
             ):
                 text_chunk = token_data["choices"][0]["text"]
                 yield text_chunk

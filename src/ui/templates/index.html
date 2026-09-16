@@ -11,11 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Press+Start+2P&display=swap" rel="stylesheet">
 
     <script src="/static/js/marked.min.js"></script>
-    <script>
-        if (typeof marked === 'undefined') {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>');
-        }
-    </script>
 
     <style>
         :root {
@@ -504,7 +499,7 @@
             <div id="composer">
                 <textarea id="composerInput" rows="1" placeholder="Ask about your documents…"></textarea>
                 <div class="composer-row">
-                    <span></span>
+                    <span class="composer-hint">Shift+Enter for new line</span>
                     <button id="sendBtn" title="Send">
                         <svg id="sendIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                     </button>
@@ -514,6 +509,7 @@
     </main>
 </div>
 
+<div id="chatMenu"></div>
 <div id="toast"></div>
 
 <script src="/static/js/app.js"></script>

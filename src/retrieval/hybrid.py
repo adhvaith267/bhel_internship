@@ -156,21 +156,11 @@ class HybridRAGRetriever:
         # Load embedding model
         logger.info(f"Loading embedding model: [cyan]{EMBEDDING_MODEL_NAME}[/cyan]")
         self.embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME, device=self.device)
-        self.embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
+        self.embedding_dim = self.embedding_model.get_embedding_dimension()
 
-        # Load cross-encoder reranker if enabled
+        # Cross-encoder reranker is lazy-loaded on first query to speed up startup.
         self.reranker: Optional[CrossEncoder] = None
-        if USE_RERANKER:
-            try:
-                logger.info(f"Loading cross-encoder reranker: [cyan]{RERANKER_MODEL_NAME}[/cyan]")
-                self.reranker = CrossEncoder(
-                    RERANKER_MODEL_NAME, device=self.device, max_length=512
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to load CrossEncoder ({e}). Falling back to pure RRF hybrid retrieval."
-                )
-                self.reranker = None
+        self._reranker_loaded = False
 
         self.chunks: List[Dict[str, Any]] = []
         self.faiss_index: Optional[faiss.Index] = None
@@ -439,6 +429,25 @@ class HybridRAGRetriever:
                 return True
         return False
 
+    def _ensure_reranker(self) -> Optional[CrossEncoder]:
+        """Lazy-loads the cross-encoder on first use to keep startup fast."""
+        if self._reranker_loaded:
+            return self.reranker
+        self._reranker_loaded = True
+        if not USE_RERANKER:
+            return None
+        try:
+            logger.info(f"Loading cross-encoder reranker: [cyan]{RERANKER_MODEL_NAME}[/cyan]")
+            self.reranker = CrossEncoder(
+                RERANKER_MODEL_NAME, device=self.device, max_length=512
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to load CrossEncoder ({e}). Falling back to pure RRF hybrid retrieval."
+            )
+            self.reranker = None
+        return self.reranker
+
     def retrieve(
         self,
         query: str,
@@ -552,7 +561,7 @@ class HybridRAGRetriever:
             return []
 
         # --- Stage 2: Neural Re-ranking fused with RRF ---
-        if self.reranker:
+        if self._ensure_reranker():
             t_rerank_start = time.time()
             pairs = [(query, chk["content"][:_RERANK_MAX_CHARS]) for chk, _ in candidates]
             cross_scores = [float(s) for s in self.reranker.predict(pairs)]
